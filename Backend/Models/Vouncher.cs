@@ -2,6 +2,7 @@
 
 namespace Backend.Models
 {
+
     public class Vouncher
     {
         public int Id { get; set; }

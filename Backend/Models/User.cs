@@ -47,7 +47,13 @@ namespace Backend.Models
         [Required]
         public bool IsActive { get; set; } = true;
     }
+    public class UserLoginDto
+    {
+        public string Email { get; set; }
+        public string Password { get; set; } // hoặc PasswordHash nếu bạn chưa mã hóa
+    }
 
+    //0,1,2,3
     public enum UserRole
     {
         Admin,

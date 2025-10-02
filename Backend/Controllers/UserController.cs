@@ -52,16 +52,20 @@ public class UserController : ControllerBase
     }
 
     // Đăng nhập
+    // Đăng nhập bằng Email + Password
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] User loginUser)
+    public async Task<IActionResult> Login([FromBody] UserLoginDto request)
     {
+        if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+            return BadRequest("Vui lòng nhập email và mật khẩu");
+
         var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Username == loginUser.Username
-                                   && u.PasswordHash == loginUser.PasswordHash
+            .FirstOrDefaultAsync(u => u.Email == request.Email
+                                   && u.PasswordHash == request.Password // ⚠️ nên hash mật khẩu
                                    && u.IsActive);
 
         if (user == null)
-            return Unauthorized("Sai username hoặc password");
+            return Unauthorized("Sai email hoặc mật khẩu");
 
         var result = new
         {
