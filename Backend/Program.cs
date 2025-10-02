@@ -1,5 +1,9 @@
 using Backend.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Backend.Services;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +15,42 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+
+builder.Services.AddAuthentication(opts =>
+{
+    opts.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    opts.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    opts.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(opts =>
+{
+    var cfg = builder.Configuration;
+    var secret = cfg["Jwt:Secret"] ?? "";
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+
+    opts.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = key,
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidIssuer = cfg["Jwt:Issuer"],
+        ValidAudience = cfg["Jwt:Audience"],
+        ClockSkew = TimeSpan.Zero // không n?i gi? h?t h?n
+    };
+});
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
+     .AllowAnyHeader().AllowAnyMethod().AllowCredentials()
+     .SetIsOriginAllowed(_ => true)));
+
 
 var app = builder.Build();
+app.UseCors();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -22,6 +60,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

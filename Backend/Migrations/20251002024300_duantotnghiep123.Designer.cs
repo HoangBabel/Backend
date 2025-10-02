@@ -4,6 +4,7 @@ using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251002024300_duantotnghiep123")]
+    partial class duantotnghiep123
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,7 +50,7 @@ namespace Backend.Migrations
                     b.ToTable("Carts");
                 });
 
-            modelBuilder.Entity("Backend.Models.CartItem", b =>
+            modelBuilder.Entity("Backend.Models.CartItems", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -259,7 +262,7 @@ namespace Backend.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Backend.Models.CartItem", b =>
+            modelBuilder.Entity("Backend.Models.CartItems", b =>
                 {
                     b.HasOne("Backend.Models.Cart", "Cart")
                         .WithMany("Items")
@@ -268,9 +271,9 @@ namespace Backend.Migrations
                         .IsRequired();
 
                     b.HasOne("Backend.Models.Product", "Product")
-                        .WithMany("CartItems")
+                        .WithMany()
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Cart");
@@ -297,11 +300,6 @@ namespace Backend.Migrations
             modelBuilder.Entity("Backend.Models.Category", b =>
                 {
                     b.Navigation("Products");
-                });
-
-            modelBuilder.Entity("Backend.Models.Product", b =>
-                {
-                    b.Navigation("CartItems");
                 });
 
             modelBuilder.Entity("Backend.Models.User", b =>

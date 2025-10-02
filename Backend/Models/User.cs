@@ -42,15 +42,11 @@ namespace Backend.Models
         // Thời gian tạo
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-
+        [JsonIgnore]
+        public Cart Cart { get; set; } = null!;
         // Trạng thái hoạt động
         [Required]
         public bool IsActive { get; set; } = true;
-    }
-    public class UserLoginDto
-    {
-        public string Email { get; set; }
-        public string Password { get; set; } // hoặc PasswordHash nếu bạn chưa mã hóa
     }
 
     //0,1,2,3
