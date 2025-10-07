@@ -41,7 +41,7 @@ namespace Backend.Models
 
         // Thời gian tạo
         [Required]
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; }
         [JsonIgnore]
         public Cart Cart { get; set; } = null!;
         // Trạng thái hoạt động

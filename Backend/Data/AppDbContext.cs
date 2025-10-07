@@ -53,6 +53,9 @@ namespace Backend.Data
                 .WithMany(p => p.CartItems!)    // ← cần nav ngược trong Product
                 .HasForeignKey(i => i.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Gọi hàm seed dữ liệu
+            ProductSeed.Seed(modelBuilder);
         }
 
         private void ApplyProductRules()

@@ -1,4 +1,4 @@
-using Backend.Data;
+﻿using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -6,6 +6,17 @@ using Backend.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// CORS setup
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowVueClient", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173") // cổng chạy Vite (Vue)
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 // Add services to the container.
 
@@ -38,19 +49,19 @@ builder.Services.AddAuthentication(opts =>
         ValidateLifetime = true,
         ValidIssuer = cfg["Jwt:Issuer"],
         ValidAudience = cfg["Jwt:Audience"],
-        ClockSkew = TimeSpan.Zero // kh�ng n?i gi? h?t h?n
+        ClockSkew = TimeSpan.Zero // không n?i gi? h?t h?n
     };
 });
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
-     .AllowAnyHeader().AllowAnyMethod().AllowCredentials()
-     .SetIsOriginAllowed(_ => true)));
+//builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
+//     .AllowAnyHeader().AllowAnyMethod().AllowCredentials()
+//     .SetIsOriginAllowed(_ => true)));
 
 
 var app = builder.Build();
-app.UseCors();
+//app.UseCors();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -63,5 +74,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+app.UseCors("AllowVueClient");
 
 app.Run();

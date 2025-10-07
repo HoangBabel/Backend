@@ -10,7 +10,7 @@ namespace Backend.Models
 
         [Required]
         [StringLength(100)]
-        public string Name { get; set; } = null!;   // non-nullable + null-forgiving
+        public string Name { get; set; } = null!;   // non-nullable + null-forgivinga
 
         // Quan hệ 1-nhiều
         [JsonIgnore] // tránh vòng lặp khi trả về Category
