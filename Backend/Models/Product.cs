@@ -25,7 +25,8 @@ namespace Backend.Models
 
         [StringLength(1000)]
         public string? Description { get; set; }
-
+        [StringLength(500)]
+        public string? Image { get; set; }
         [Required]
         [Column(TypeName = "nvarchar(20)")]
         [JsonConverter(typeof(JsonStringEnumConverter))] // để API nhận/trả enum dạng string

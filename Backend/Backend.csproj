@@ -26,7 +26,11 @@
   </ItemGroup>
 
   <ItemGroup>
+<<<<<<< HEAD
     <Folder Include="Migrations\" />
+=======
+    <Folder Include="wwwroot\images\" />
+>>>>>>> 76c4054e16caa57969dc15d7fa582de5873d4daa
   </ItemGroup>
 
 </Project>
