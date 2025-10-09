@@ -24,7 +24,7 @@ namespace Backend.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal UnitPrice { get; set; } // snapshot giá khi thêm vào
 
-        public DateTime AddedAt { get; set; } = DateTime.Now;
+        public DateTime AddedAt { get; set; } 
     }
 
 }

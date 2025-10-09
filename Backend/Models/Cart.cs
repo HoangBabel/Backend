@@ -16,7 +16,7 @@ namespace Backend.Models
 
             public ICollection<CartItem> Items { get; set; } = new List<CartItem>();
 
-            public DateTime UpdatedAt { get; set; } = DateTime.Now;
+            public DateTime UpdatedAt { get; set; }
             public bool IsCheckedOut { get; set; } = false; // true nếu đã chuyển thành Order
         }
 
