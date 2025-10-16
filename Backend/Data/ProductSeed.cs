@@ -7,6 +7,20 @@ namespace Backend.Data
     {
         public static void Seed(ModelBuilder modelBuilder)
         {
+            // --- USER ---
+            modelBuilder.Entity<User>().HasData(
+                 new User
+                 {
+                     Id = 10,
+                     Username = "giang",
+                     Email = "giang@example.com",
+                     PasswordHash = "$2a$11$zB0cPctNLMkRJqNbC7qc7eF.VvtXVr1KmCuGUEoXC331zdp4Q9J.a",//giang123@
+                     FullName = "le giang",
+                     PhoneNumber = "0773678161",
+                     Role = UserRole.Admin,
+                     CreatedAt = DateTime.Parse("2025-10-16T03:32:39.9245745Z"),
+                     IsActive = true
+                 });
             // --- CATEGORY ---
             modelBuilder.Entity<Category>().HasData(
                 new Category { CategoryId = 1, Name = "Tivi" },

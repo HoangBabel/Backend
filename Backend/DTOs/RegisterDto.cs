@@ -16,7 +16,8 @@ namespace Backend.DTOs
         [Required, StringLength(100)]
         public string FullName { get; set; } = null!;
 
-        [StringLength(20)]
+        [Required(ErrorMessage = "Vui lòng nhập số điện thoại")]
+        [RegularExpression(@"^0\d{9,10}$", ErrorMessage = "Số điện thoại phải bắt đầu bằng 0 và có 10-11 chữ số")]
         public string? PhoneNumber { get; set; }
     }
 }

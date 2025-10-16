@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class InitSeedData : Migration
+    public partial class db123 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -81,6 +81,7 @@ namespace Backend.Migrations
                     Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    Image = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Status = table.Column<string>(type: "nvarchar(20)", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -121,6 +122,30 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Orders",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    OrderDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(20)", nullable: false),
+                    ShippingAddress = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    PaymentMethod = table.Column<string>(type: "nvarchar(50)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Orders", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Orders_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "CartItems",
                 columns: table => new
                 {
@@ -149,6 +174,34 @@ namespace Backend.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "OrderItems",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    OrderId = table.Column<int>(type: "int", nullable: false),
+                    ProductId = table.Column<int>(type: "int", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    UnitPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OrderItems", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OrderItems_Orders_OrderId",
+                        column: x => x.OrderId,
+                        principalTable: "Orders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_OrderItems_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "IdProduct",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.InsertData(
                 table: "Categories",
                 columns: new[] { "CategoryId", "Name" },
@@ -163,19 +216,19 @@ namespace Backend.Migrations
 
             migrationBuilder.InsertData(
                 table: "Products",
-                columns: new[] { "IdProduct", "CategoryId", "CreatedBy", "CreatedDate", "Description", "IsDeleted", "Name", "Price", "Quantity", "Status", "UpdatedBy", "UpdatedDate" },
+                columns: new[] { "IdProduct", "CategoryId", "CreatedBy", "CreatedDate", "Description", "Image", "IsDeleted", "Name", "Price", "Quantity", "Status", "UpdatedBy", "UpdatedDate" },
                 values: new object[,]
                 {
-                    { 1, 1, null, null, "Smart Tivi 4K hiển thị sắc nét, hỗ trợ điều khiển bằng giọng nói.", false, "Tivi Samsung Crystal UHD 55 inch BU8000", 12990000m, 12, "ConHang", null, null },
-                    { 2, 1, null, null, "Màn hình OLED siêu mỏng, hỗ trợ Dolby Vision và Dolby Atmos.", false, "Tivi LG OLED evo 48 inch C3", 27990000m, 5, "ConHang", null, null },
-                    { 3, 2, null, null, "Công nghệ tiết kiệm điện Inverter, ngăn đông mềm Prime Fresh+.", false, "Tủ lạnh Panasonic Inverter 322 lít NR-BV361BPKV", 12490000m, 8, "ConHang", null, null },
-                    { 4, 2, null, null, "Làm lạnh nhanh, khử mùi bằng than hoạt tính, thiết kế sang trọng.", false, "Tủ lạnh Samsung Inverter 424 lít RT42CG6324B1SV", 14990000m, 7, "ConHang", null, null },
-                    { 5, 3, null, null, "Công nghệ UltraMix hòa tan bột giặt, giảm phai màu quần áo.", false, "Máy giặt Electrolux Inverter 10kg EWF1024BDWA", 8990000m, 10, "ConHang", null, null },
-                    { 6, 3, null, null, "AI Control tự động tối ưu chương trình giặt, tiết kiệm năng lượng.", false, "Máy giặt Samsung Inverter 9.5kg WW95T504DAW/SV", 8790000m, 6, "ConHang", null, null },
-                    { 7, 4, null, null, "Công nghệ Streamer khử khuẩn, tiết kiệm điện vượt trội.", false, "Máy lạnh Daikin Inverter 1.5 HP FTKY35WMVMV", 11490000m, 9, "ConHang", null, null },
-                    { 8, 4, null, null, "Làm lạnh nhanh, kháng khuẩn bằng ion bạc, vận hành êm ái.", false, "Máy lạnh LG Inverter 1 HP V10WIN", 8390000m, 11, "ConHang", null, null },
-                    { 9, 5, null, null, "Công nghệ Rapid Air giảm 90% dầu mỡ, vỏ thép sơn tĩnh điện.", false, "Nồi chiên không dầu Philips HD9200/90 4.1L", 2290000m, 15, "ConHang", null, null },
-                    { 10, 5, null, null, "Chức năng hâm, nấu, rã đông nhanh, điều khiển núm xoay cơ học.", false, "Lò vi sóng Sharp R-G226VN-BK 20 lít", 1990000m, 14, "ConHang", null, null }
+                    { 1, 1, null, null, "Smart Tivi 4K hiển thị sắc nét, hỗ trợ điều khiển bằng giọng nói.", null, false, "Tivi Samsung Crystal UHD 55 inch BU8000", 12990000m, 12, "ConHang", null, null },
+                    { 2, 1, null, null, "Màn hình OLED siêu mỏng, hỗ trợ Dolby Vision và Dolby Atmos.", null, false, "Tivi LG OLED evo 48 inch C3", 27990000m, 5, "ConHang", null, null },
+                    { 3, 2, null, null, "Công nghệ tiết kiệm điện Inverter, ngăn đông mềm Prime Fresh+.", null, false, "Tủ lạnh Panasonic Inverter 322 lít NR-BV361BPKV", 12490000m, 8, "ConHang", null, null },
+                    { 4, 2, null, null, "Làm lạnh nhanh, khử mùi bằng than hoạt tính, thiết kế sang trọng.", null, false, "Tủ lạnh Samsung Inverter 424 lít RT42CG6324B1SV", 14990000m, 7, "ConHang", null, null },
+                    { 5, 3, null, null, "Công nghệ UltraMix hòa tan bột giặt, giảm phai màu quần áo.", null, false, "Máy giặt Electrolux Inverter 10kg EWF1024BDWA", 8990000m, 10, "ConHang", null, null },
+                    { 6, 3, null, null, "AI Control tự động tối ưu chương trình giặt, tiết kiệm năng lượng.", null, false, "Máy giặt Samsung Inverter 9.5kg WW95T504DAW/SV", 8790000m, 6, "ConHang", null, null },
+                    { 7, 4, null, null, "Công nghệ Streamer khử khuẩn, tiết kiệm điện vượt trội.", null, false, "Máy lạnh Daikin Inverter 1.5 HP FTKY35WMVMV", 11490000m, 9, "ConHang", null, null },
+                    { 8, 4, null, null, "Làm lạnh nhanh, kháng khuẩn bằng ion bạc, vận hành êm ái.", null, false, "Máy lạnh LG Inverter 1 HP V10WIN", 8390000m, 11, "ConHang", null, null },
+                    { 9, 5, null, null, "Công nghệ Rapid Air giảm 90% dầu mỡ, vỏ thép sơn tĩnh điện.", null, false, "Nồi chiên không dầu Philips HD9200/90 4.1L", 2290000m, 15, "ConHang", null, null },
+                    { 10, 5, null, null, "Chức năng hâm, nấu, rã đông nhanh, điều khiển núm xoay cơ học.", null, false, "Lò vi sóng Sharp R-G226VN-BK 20 lít", 1990000m, 14, "ConHang", null, null }
                 });
 
             migrationBuilder.CreateIndex(
@@ -195,6 +248,21 @@ namespace Backend.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_OrderItems_OrderId",
+                table: "OrderItems",
+                column: "OrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderItems_ProductId",
+                table: "OrderItems",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_UserId",
+                table: "Orders",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Products_CategoryId",
                 table: "Products",
                 column: "CategoryId");
@@ -207,10 +275,16 @@ namespace Backend.Migrations
                 name: "CartItems");
 
             migrationBuilder.DropTable(
+                name: "OrderItems");
+
+            migrationBuilder.DropTable(
                 name: "Vounchers");
 
             migrationBuilder.DropTable(
                 name: "Carts");
+
+            migrationBuilder.DropTable(
+                name: "Orders");
 
             migrationBuilder.DropTable(
                 name: "Products");

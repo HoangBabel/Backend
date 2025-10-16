@@ -79,6 +79,10 @@ public class UserController : ControllerBase
             return BadRequest("Username đã tồn tại.");
         if (await _context.Users.AnyAsync(u => u.Email.ToLower() == email))
             return BadRequest("Email đã tồn tại.");
+        if (await _context.Users.AnyAsync(u => u.PhoneNumber == dto.PhoneNumber && dto.PhoneNumber != null))
+            return BadRequest("Số điện thoại đã tồn tại.");
+        if (await _context.Users.CountAsync() == 0)
+            return BadRequest("Không thể đăng ký user đầu tiên, vui lòng liên hệ Admin.");
 
         var hashed = BCrypt.Net.BCrypt.HashPassword(dto.Password);
 

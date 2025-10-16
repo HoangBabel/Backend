@@ -16,6 +16,9 @@ namespace Backend.Data
         public DbSet<Vouncher> Vounchers { get; set; } = default!;
         public DbSet<Cart> Carts { get; set; } = default!;
         public DbSet<CartItem> CartItems { get; set; } = default!; // ← Lớp số ít
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
+       
 
         public override int SaveChanges()
         {
@@ -53,6 +56,11 @@ namespace Backend.Data
                 .WithMany(p => p.CartItems!)    // ← cần nav ngược trong Product
                 .HasForeignKey(i => i.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Order>()
+               .HasMany(o => o.Items)
+               .WithOne(oi => oi.Order)
+               .HasForeignKey(oi => oi.OrderId);
 
             // Gọi hàm seed dữ liệu
             ProductSeed.Seed(modelBuilder);

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251007025059_duân")]
-    partial class duân
+    [Migration("20251016034144_updatephone")]
+    partial class updatephone
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -98,6 +98,99 @@ namespace Backend.Migrations
                     b.HasKey("CategoryId");
 
                     b.ToTable("Categories");
+
+                    b.HasData(
+                        new
+                        {
+                            CategoryId = 1,
+                            Name = "Tivi"
+                        },
+                        new
+                        {
+                            CategoryId = 2,
+                            Name = "Tủ lạnh"
+                        },
+                        new
+                        {
+                            CategoryId = 3,
+                            Name = "Máy giặt"
+                        },
+                        new
+                        {
+                            CategoryId = 4,
+                            Name = "Máy lạnh"
+                        },
+                        new
+                        {
+                            CategoryId = 5,
+                            Name = "Gia dụng nhà bếp"
+                        });
+                });
+
+            modelBuilder.Entity("Backend.Models.Order", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ShippingAddress")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("Backend.Models.OrderItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("OrderItems");
                 });
 
             modelBuilder.Entity("Backend.Models.Product", b =>
@@ -120,6 +213,10 @@ namespace Backend.Migrations
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Image")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -150,6 +247,118 @@ namespace Backend.Migrations
                     b.HasIndex("CategoryId");
 
                     b.ToTable("Products");
+
+                    b.HasData(
+                        new
+                        {
+                            IdProduct = 1,
+                            CategoryId = 1,
+                            Description = "Smart Tivi 4K hiển thị sắc nét, hỗ trợ điều khiển bằng giọng nói.",
+                            IsDeleted = false,
+                            Name = "Tivi Samsung Crystal UHD 55 inch BU8000",
+                            Price = 12990000m,
+                            Quantity = 12,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 2,
+                            CategoryId = 1,
+                            Description = "Màn hình OLED siêu mỏng, hỗ trợ Dolby Vision và Dolby Atmos.",
+                            IsDeleted = false,
+                            Name = "Tivi LG OLED evo 48 inch C3",
+                            Price = 27990000m,
+                            Quantity = 5,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 3,
+                            CategoryId = 2,
+                            Description = "Công nghệ tiết kiệm điện Inverter, ngăn đông mềm Prime Fresh+.",
+                            IsDeleted = false,
+                            Name = "Tủ lạnh Panasonic Inverter 322 lít NR-BV361BPKV",
+                            Price = 12490000m,
+                            Quantity = 8,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 4,
+                            CategoryId = 2,
+                            Description = "Làm lạnh nhanh, khử mùi bằng than hoạt tính, thiết kế sang trọng.",
+                            IsDeleted = false,
+                            Name = "Tủ lạnh Samsung Inverter 424 lít RT42CG6324B1SV",
+                            Price = 14990000m,
+                            Quantity = 7,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 5,
+                            CategoryId = 3,
+                            Description = "Công nghệ UltraMix hòa tan bột giặt, giảm phai màu quần áo.",
+                            IsDeleted = false,
+                            Name = "Máy giặt Electrolux Inverter 10kg EWF1024BDWA",
+                            Price = 8990000m,
+                            Quantity = 10,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 6,
+                            CategoryId = 3,
+                            Description = "AI Control tự động tối ưu chương trình giặt, tiết kiệm năng lượng.",
+                            IsDeleted = false,
+                            Name = "Máy giặt Samsung Inverter 9.5kg WW95T504DAW/SV",
+                            Price = 8790000m,
+                            Quantity = 6,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 7,
+                            CategoryId = 4,
+                            Description = "Công nghệ Streamer khử khuẩn, tiết kiệm điện vượt trội.",
+                            IsDeleted = false,
+                            Name = "Máy lạnh Daikin Inverter 1.5 HP FTKY35WMVMV",
+                            Price = 11490000m,
+                            Quantity = 9,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 8,
+                            CategoryId = 4,
+                            Description = "Làm lạnh nhanh, kháng khuẩn bằng ion bạc, vận hành êm ái.",
+                            IsDeleted = false,
+                            Name = "Máy lạnh LG Inverter 1 HP V10WIN",
+                            Price = 8390000m,
+                            Quantity = 11,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 9,
+                            CategoryId = 5,
+                            Description = "Công nghệ Rapid Air giảm 90% dầu mỡ, vỏ thép sơn tĩnh điện.",
+                            IsDeleted = false,
+                            Name = "Nồi chiên không dầu Philips HD9200/90 4.1L",
+                            Price = 2290000m,
+                            Quantity = 15,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 10,
+                            CategoryId = 5,
+                            Description = "Chức năng hâm, nấu, rã đông nhanh, điều khiển núm xoay cơ học.",
+                            IsDeleted = false,
+                            Name = "Lò vi sóng Sharp R-G226VN-BK 20 lít",
+                            Price = 1990000m,
+                            Quantity = 14,
+                            Status = "ConHang"
+                        });
                 });
 
             modelBuilder.Entity("Backend.Models.User", b =>
@@ -183,8 +392,7 @@ namespace Backend.Migrations
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -281,6 +489,36 @@ namespace Backend.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Backend.Models.Order", b =>
+                {
+                    b.HasOne("Backend.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Backend.Models.OrderItem", b =>
+                {
+                    b.HasOne("Backend.Models.Order", "Order")
+                        .WithMany("Items")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("Backend.Models.Product", b =>
                 {
                     b.HasOne("Backend.Models.Category", "Category")
@@ -300,6 +538,11 @@ namespace Backend.Migrations
             modelBuilder.Entity("Backend.Models.Category", b =>
                 {
                     b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("Backend.Models.Order", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("Backend.Models.Product", b =>
