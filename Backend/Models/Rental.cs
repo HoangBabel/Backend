@@ -1,18 +1,20 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace Backend.Models
 {
-    public class Rentals
+    public class Rental
     {
         [Key]
         public int Id { get; set; }
 
         [Required]
         public int UserId { get; set; }
-        [JsonIgnore]
-        public User User { get; set; } = null!;
+        [JsonIgnore]                // không bind/serialize
+        [ValidateNever]             // không validate
+        public User? User { get; set; }   // <- cho nullable
 
         public DateTime StartDate { get; set; }  // Ngày bắt đầu thuê
         public DateTime EndDate { get; set; }    // Ngày kết thúc thuê

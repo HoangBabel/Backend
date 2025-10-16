@@ -18,7 +18,9 @@ namespace Backend.Data
         public DbSet<CartItem> CartItems { get; set; } = default!; // ← Lớp số ít
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
-       
+        public DbSet<Rental> Rentals { get; set; }
+        public DbSet<RentalItem> RentalItems { get; set; }
+
 
         public override int SaveChanges()
         {
