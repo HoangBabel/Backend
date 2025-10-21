@@ -43,7 +43,8 @@ namespace Backend.Models
         [Required]
         public DateTime CreatedAt { get; set; }
         [JsonIgnore]
-        public Cart Cart { get; set; } = null!;
+        public ICollection<Cart> Carts { get; set; } = new List<Cart>();
+
         // Trạng thái hoạt động
         [Required]
         public bool IsActive { get; set; } = true;

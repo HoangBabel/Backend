@@ -32,10 +32,11 @@ namespace Backend.Models
         [JsonConverter(typeof(JsonStringEnumConverter))] // để API nhận/trả enum dạng string
         public ProductStatus Status { get; set; } = ProductStatus.ConHang;
         [JsonIgnore]
-        public ICollection<CartItem>? CartItems { get; set; }
+        public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
         // Liên kết
         [JsonIgnore] // tránh vòng lặp khi trả Product, và tránh client post Category lồng
         public Category? Category { get; set; }
+
     }
     public enum ProductStatus
     {

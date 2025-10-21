@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using Backend.DTOs;
 
 namespace Backend.Models
 {
@@ -23,6 +24,12 @@ namespace Backend.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalAmount { get; set; }
 
+        [Required]
+        [Column(TypeName = "nvarchar(20)")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.COD;
+
+
         // Trạng thái đơn hàng
         [Required]
         [Column(TypeName = "nvarchar(20)")]
@@ -30,14 +37,10 @@ namespace Backend.Models
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
         // Địa chỉ giao hàng
-        //[Required]
-        //[StringLength(255)]
-        //public string ShippingAddress { get; set; } = null!;
-
-        // Phương thức thanh toán
         [Required]
-        [Column(TypeName = "nvarchar(50)")]
-        public string PaymentMethod { get; set; } = "COD";
+        [StringLength(255)]
+        public string? ShippingAddress { get; set; }
+
 
         // Danh sách sản phẩm trong đơn
         public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();

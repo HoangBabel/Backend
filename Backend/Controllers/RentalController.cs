@@ -104,7 +104,7 @@ namespace Backend.Controllers
                     rental
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await tx.RollbackAsync();
                 // Log ex...

@@ -38,11 +38,11 @@ namespace Backend.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // User 1—1 Cart
+            // User 1—N Cart
             modelBuilder.Entity<User>()
-                .HasOne(u => u.Cart)
+                .HasMany(u => u.Carts)
                 .WithOne(c => c.User)
-                .HasForeignKey<Cart>(c => c.UserId)
+                .HasForeignKey(c => c.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Cart 1—N CartItem
@@ -63,6 +63,12 @@ namespace Backend.Data
                .HasMany(o => o.Items)
                .WithOne(oi => oi.Order)
                .HasForeignKey(oi => oi.OrderId);
+
+            modelBuilder.Entity<Cart>()
+                .HasIndex(c => c.UserId)
+                .IsUnique()
+                .HasFilter("[IsCheckedOut] = 0")
+                .HasDatabaseName("IX_Carts_UserId_NotCheckedOut");
 
             // Gọi hàm seed dữ liệu
             ProductSeed.Seed(modelBuilder);
