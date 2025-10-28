@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Backend.Models
 {
@@ -10,8 +11,8 @@ namespace Backend.Models
         [Required]
         public string Code { get; set; } = string.Empty;
 
-        // Loại giảm giá: "Fixed", "Percent", "Shipping"
-        public string Type { get; set; } = "Percent";
+      
+        public string? Type { get; set; }
 
         public int? DiscountValue { get; set; }        // Giảm trực tiếp (Fixed)
         public int? DiscountPercent { get; set; }      // % giảm giá

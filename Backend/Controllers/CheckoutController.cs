@@ -28,14 +28,15 @@ public class CheckoutController : ControllerBase
         {
             var res = await _service.CheckoutOrderAsync(req, ct);
 
-            // ✅ Gọi API MoMo để tạo thanh toán sau khi checkout thành công
-            var momoUrl = await CreateMomoPaymentUrlAsync(res.OrderId, req.TotalAmount);
+            // Luôn dùng số tiền do server tính
+            var momoUrl = await CreateMomoPaymentUrlAsync(res.OrderId, res.FinalAmount);
 
             return Ok(new
             {
-                Message = res.Message,
-                OrderId = res.OrderId,
-                PayUrl = momoUrl // URL chuyển đến MoMo hoặc hiển thị QR
+                res.Message,
+                res.OrderId,
+                TotalAmount = res.FinalAmount,
+                PayUrl = momoUrl
             });
         }
         catch (InvalidOperationException ex)
@@ -118,6 +119,7 @@ public class CheckoutController : ControllerBase
     private const string partnerCode = "MOMOBKUN20180529";
     private const string accessKey = "klm05TvNBzhg7h7j";
     private const string secretKey = "at67qH6mk8w5Y1nAyMoYKMWACiEi2bsa";
+
 
     private async Task<string> CreateMomoPaymentUrlAsync(int orderId, decimal amount)
     {

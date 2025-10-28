@@ -7,10 +7,9 @@
     }
     public class CheckoutOrderRequest
     {
-        [System.ComponentModel.DataAnnotations.Range(0.01, double.MaxValue, ErrorMessage = "Tổng tiền phải lớn hơn 0")]
-        public decimal TotalAmount { get; set; }
         public int UserId { get; set; }
         public string ShippingAddress { get; set; } = null!;
+        public string? VoucherCode { get; set; }  // có thể null
         public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.COD;
     }
 
@@ -47,8 +46,14 @@
 
     public class CheckoutOrderResponse
     {
+        public string Message { get; set; } = "Đặt hàng thành công.";
         public int OrderId { get; set; }
-        public string Message { get; set; } = "Đặt hàng thành công!";
+        public decimal Subtotal { get; set; }
+        public decimal ShippingFee { get; set; }
+        public decimal Discount { get; set; }
+        public decimal FinalAmount { get; set; }
+        public PaymentMethod PaymentMethod { get; set; }
+        public string? VoucherCode { get; set; }
     }
 
     public class CheckoutRentalResponse
@@ -57,5 +62,7 @@
         public int RentalDays { get; set; }
         public string Message { get; set; } = "Tạo đơn thuê thành công";
     }
+
+
 
 }

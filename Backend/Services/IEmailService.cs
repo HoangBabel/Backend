@@ -22,7 +22,7 @@ public class EmailService : IEmailService
     public async Task SendEmailAsync(string toEmail, string subject, string body)
     {
         var smtpHost = _config["Email:SmtpHost"] ?? "smtp.gmail.com";
-        var smtpPort = int.Parse(_config["Email:SmtpPort"] ?? "587");
+        var smtpPort = int.Parse(_config["Email:SmtpPort"] ?? "465");
         var fromEmail = _config["Email:FromEmail"] ?? throw new Exception("Email:FromEmail not configured");
         var password = _config["Email:Password"] ?? throw new Exception("Email:Password not configured");
 

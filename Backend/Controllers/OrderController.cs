@@ -145,9 +145,10 @@ namespace Backend.Controllers
         public async Task<IActionResult> GetOrdersByUser(int userId)
         {
             var orders = await _context.Orders
-                .Include(o => o.Items)
-                .ThenInclude(i => i.Product)
+                .Include(o => o.User)
+                .Include(o => o.Items).ThenInclude(i => i.Product)
                 .Where(o => o.UserId == userId)
+                .AsNoTracking()
                 .ToListAsync();
 
             return Ok(orders);

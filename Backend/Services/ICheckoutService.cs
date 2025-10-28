@@ -3,8 +3,10 @@
     using Backend.Models;
     using Microsoft.EntityFrameworkCore;
     using static Backend.Helpers.DateTimeHelper; // nếu bạn muốn dùng helper TZ VN
+    using static Backend.Helpers.VoucherCalculator;
+    using static Backend.Helpers.VoucherValidator;
 
-    namespace Backend.Services;
+namespace Backend.Services;
 
     public interface ICheckoutService
     {
@@ -22,80 +24,180 @@
             _context = context;
         }
 
-        public async Task<CheckoutOrderResponse> CheckoutOrderAsync(CheckoutOrderRequest req, CancellationToken ct = default)
+    //public async Task<CheckoutOrderResponse> CheckoutOrderAsync(CheckoutOrderRequest req, CancellationToken ct = default)
+    //{
+    //    var cart = await _context.Carts
+    //        .Include(c => c.Items)
+    //        .ThenInclude(i => i.Product)
+    //        .FirstOrDefaultAsync(c => c.UserId == req.UserId && !c.IsCheckedOut, ct);
+
+    //    if (cart == null || !cart.Items.Any())
+    //        throw new InvalidOperationException("Giỏ hàng trống hoặc không tồn tại.");
+
+    //    // Tính tổng + trừ tồn
+    //    decimal total = 0m;
+
+    //    await using var tx = await _context.Database.BeginTransactionAsync(ct);
+    //    try
+    //    {
+    //        foreach (var ci in cart.Items)
+    //        {
+    //            if (ci.Quantity <= 0)
+    //                throw new InvalidOperationException($"Số lượng không hợp lệ cho sản phẩm Id={ci.ProductId}.");
+
+    //            if (ci.Product == null)
+    //                throw new InvalidOperationException($"Sản phẩm Id={ci.ProductId} không tồn tại.");
+
+    //            if (ci.Product.Quantity < ci.Quantity)
+    //                throw new InvalidOperationException($"Sản phẩm '{ci.Product.Name}' không đủ tồn.");
+
+    //            total += ci.UnitPrice * ci.Quantity;
+
+    //            // Trừ tồn theo số lượng mua
+    //            ci.Product.Quantity -= ci.Quantity;
+    //        }
+
+    //        var order = new Order
+    //        {
+    //            UserId = req.UserId,
+    //            TotalAmount = total,
+    //            ShippingAddress = req.ShippingAddress,
+    //            PaymentMethod = req.PaymentMethod,
+    //            Status = OrderStatus.Pending,
+    //            Items = new List<OrderItem>()
+    //        };
+
+    //        foreach (var ci in cart.Items)
+    //        {
+    //            order.Items.Add(new OrderItem
+    //            {
+    //                ProductId = ci.ProductId,
+    //                Quantity = ci.Quantity,
+    //                UnitPrice = ci.UnitPrice
+    //            });
+    //        }
+
+    //        cart.IsCheckedOut = true;
+    //        cart.UpdatedAt = DateTime.UtcNow;
+
+    //        _context.Orders.Add(order);
+    //        await _context.SaveChangesAsync(ct);
+    //        await tx.CommitAsync(ct);
+
+    //        return new CheckoutOrderResponse
+    //        {
+    //            OrderId = order.Id,
+    //            TotalAmount = order.TotalAmount,
+    //            Message = "Đặt hàng thành công!"
+    //        };
+    //    }
+    //    catch
+    //    {
+    //        await tx.RollbackAsync(ct);
+    //        throw;
+    //    }
+    //}
+    public async Task<CheckoutOrderResponse> CheckoutOrderAsync(CheckoutOrderRequest req, CancellationToken ct)
+    {
+        // 1) Lấy giỏ hàng
+        var cart = await _context.Carts
+            .Include(c => c.Items)
+            .ThenInclude(i => i.Product)
+            .FirstOrDefaultAsync(c => c.UserId == req.UserId && !c.IsCheckedOut, ct);
+
+        if (cart == null || !cart.Items.Any())
+            throw new InvalidOperationException("Giỏ hàng trống hoặc không tồn tại.");
+
+        // 2) Tính subtotal (tổng tiền hàng)
+        var subtotal = cart.Items.Sum(i => i.UnitPrice * i.Quantity);
+
+        // 3) Nếu có voucher -> validate + tính discount
+        Vouncher? voucher = null;
+        decimal discount = 0m;
+
+        if (!string.IsNullOrWhiteSpace(req.VoucherCode))
         {
-            var cart = await _context.Carts
-                .Include(c => c.Items)
-                .ThenInclude(i => i.Product)
-                .FirstOrDefaultAsync(c => c.UserId == req.UserId && !c.IsCheckedOut, ct);
+            var code = req.VoucherCode.Trim();
+            voucher = await _context.Vounchers.FirstOrDefaultAsync(v => v.Code == code, ct);
+            if (voucher == null)
+                throw new InvalidOperationException("Mã voucher không tồn tại.");
 
-            if (cart == null || !cart.Items.Any())
-                throw new InvalidOperationException("Giỏ hàng trống hoặc không tồn tại.");
+            if (!IsUsable(voucher, subtotal))
+                throw new InvalidOperationException("Voucher không còn hiệu lực hoặc không đạt điều kiện.");
 
-            // Tính tổng + trừ tồn
-            decimal total = 0m;
-
-            await using var tx = await _context.Database.BeginTransactionAsync(ct);
-            try
-            {
-                foreach (var ci in cart.Items)
-                {
-                    if (ci.Quantity <= 0)
-                        throw new InvalidOperationException($"Số lượng không hợp lệ cho sản phẩm Id={ci.ProductId}.");
-
-                    if (ci.Product == null)
-                        throw new InvalidOperationException($"Sản phẩm Id={ci.ProductId} không tồn tại.");
-
-                    if (ci.Product.Quantity < ci.Quantity)
-                        throw new InvalidOperationException($"Sản phẩm '{ci.Product.Name}' không đủ tồn.");
-
-                    total += ci.UnitPrice * ci.Quantity;
-
-                    // Trừ tồn theo số lượng mua
-                    ci.Product.Quantity -= ci.Quantity;
-                }
-
-                var order = new Order
-                {
-                    UserId = req.UserId,
-                    TotalAmount = total,
-                    ShippingAddress = req.ShippingAddress,
-                    PaymentMethod = req.PaymentMethod,
-                    Status = OrderStatus.Pending,
-                    Items = new List<OrderItem>()
-                };
-
-                foreach (var ci in cart.Items)
-                {
-                    order.Items.Add(new OrderItem
-                    {
-                        ProductId = ci.ProductId,
-                        Quantity = ci.Quantity,
-                        UnitPrice = ci.UnitPrice
-                    });
-                }
-
-                cart.IsCheckedOut = true;
-                cart.UpdatedAt = DateTime.UtcNow;
-
-                _context.Orders.Add(order);
-                await _context.SaveChangesAsync(ct);
-                await tx.CommitAsync(ct);
-
-                return new CheckoutOrderResponse
-                {
-                    OrderId = order.Id,
-                    Message = "Đặt hàng thành công!"
-                };
-            }
-            catch
-            {
-                await tx.RollbackAsync(ct);
-                throw;
-            }
+            discount = CalcDiscount(voucher, subtotal);
         }
 
-        public async Task<CheckoutRentalResponse> CheckoutRentalByDaysAsync(CheckoutRentalByDaysRequest req, CancellationToken ct = default)
+        // 4) Tính final amount (sau giảm)
+        var finalAmount = subtotal - discount;
+        if (finalAmount < 0) finalAmount = 0;
+
+        // 5) Tạo đơn hàng và gắn voucher
+        using var tx = await _context.Database.BeginTransactionAsync(ct);
+        try
+        {
+            var order = new Order
+            {
+                UserId = req.UserId,
+                OrderDate = DateTime.Now,
+                ShippingAddress = req.ShippingAddress,
+                PaymentMethod = req.PaymentMethod,
+                Status = OrderStatus.Pending,
+
+                TotalAmount = subtotal,
+                DiscountAmount = discount,
+                FinalAmount = finalAmount,
+
+                VoucherId = voucher?.Id,               // Gắn voucher vào đơn
+                Voucher = voucher,
+                VoucherCodeSnapshot = voucher?.Code
+            };
+
+            foreach (var item in cart.Items)
+            {
+                order.Items.Add(new OrderItem
+                {
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice
+                });
+            }
+
+            cart.IsCheckedOut = true;
+
+            // 6) Cập nhật lượt dùng voucher
+            if (voucher != null)
+            {
+                voucher.CurrentUsageCount += 1;
+                voucher.UsedAt = DateTime.UtcNow;
+                if (voucher.MaxUsageCount > 0 && voucher.CurrentUsageCount >= voucher.MaxUsageCount)
+                    voucher.IsValid = false;
+            }
+
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+
+            return new CheckoutOrderResponse
+            {
+                Message = "Đặt hàng thành công.",
+                OrderId = order.Id,
+                Subtotal = subtotal,
+                Discount = discount,
+                FinalAmount = finalAmount,
+                PaymentMethod = req.PaymentMethod,
+                VoucherCode = voucher?.Code
+            };
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+    }
+
+
+    public async Task<CheckoutRentalResponse> CheckoutRentalByDaysAsync(CheckoutRentalByDaysRequest req, CancellationToken ct = default)
         {
             if (req.Items == null || req.Items.Count == 0)
                 throw new InvalidOperationException("Đơn thuê phải có ít nhất 1 sản phẩm.");
