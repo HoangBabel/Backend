@@ -6,10 +6,9 @@ namespace Backend.Models
 {
     public class User
     {
-        [Key] // Khóa chính
+        [Key]
         public int Id { get; set; }
 
-        // Tài khoản đăng nhập
         [Required]
         [StringLength(50, MinimumLength = 3, ErrorMessage = "Tên đăng nhập phải từ 3-50 ký tự")]
         public string Username { get; set; } = null!;
@@ -19,12 +18,10 @@ namespace Backend.Models
         [StringLength(100)]
         public string Email { get; set; } = null!;
 
-        // Mật khẩu hash (không lưu plaintext)
         [Required]
         [StringLength(255)]
         public string PasswordHash { get; set; } = null!;
 
-        // Thông tin cá nhân
         [Required]
         [StringLength(100)]
         public string FullName { get; set; } = null!;
@@ -33,24 +30,29 @@ namespace Backend.Models
         [RegularExpression(@"^0\d{9,10}$", ErrorMessage = "Số điện thoại phải bắt đầu bằng 0 và có 10-11 chữ số")]
         public string PhoneNumber { get; set; } = null!;
 
-        // Vai trò trong hệ thống
         [Required]
         [Column(TypeName = "nvarchar(20)")]
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public UserRole Role { get; set; } = UserRole.Customer;
 
-        // Thời gian tạo
         [Required]
         public DateTime CreatedAt { get; set; }
+
         [JsonIgnore]
         public ICollection<Cart> Carts { get; set; } = new List<Cart>();
 
-        // Trạng thái hoạt động
         [Required]
         public bool IsActive { get; set; } = true;
+
+        // ✅ Thêm các thuộc tính 2FA
+        public bool IsTwoFactorEnabled { get; set; } = false;
+        
+        [StringLength(6)]
+        public string? TwoFactorCode { get; set; }
+        
+        public DateTime? TwoFactorCodeExpiry { get; set; }
     }
 
-    //0,1,2,3
     public enum UserRole
     {
         Admin,
@@ -59,4 +61,3 @@ namespace Backend.Models
         Shipper
     }
 }
-

@@ -37,6 +37,8 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ICheckoutService, CheckoutService>();
+// Thêm vào Program.cs
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddAuthentication(opts =>
 {

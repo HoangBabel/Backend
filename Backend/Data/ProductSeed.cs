@@ -19,7 +19,8 @@ namespace Backend.Data
                      PhoneNumber = "0773678161",
                      Role = UserRole.Admin,
                      CreatedAt = DateTime.Parse("2025-10-16T03:32:39.9245745Z"),
-                     IsActive = true
+                     IsActive = true,
+                     IsTwoFactorEnabled = false 
                  });
             // --- CATEGORY ---
             modelBuilder.Entity<Category>().HasData(
