@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251016041712_Updaterental")]
-    partial class Updaterental
+    [Migration("20251028032451_da1")]
+    partial class da1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -45,7 +45,9 @@ namespace Backend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("UserId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("IX_Carts_UserId_NotCheckedOut")
+                        .HasFilter("[IsCheckedOut] = 0");
 
                     b.ToTable("Carts");
                 });
@@ -140,7 +142,12 @@ namespace Backend.Migrations
 
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ShippingAddress")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -534,8 +541,8 @@ namespace Backend.Migrations
             modelBuilder.Entity("Backend.Models.Cart", b =>
                 {
                     b.HasOne("Backend.Models.User", "User")
-                        .WithOne("Cart")
-                        .HasForeignKey("Backend.Models.Cart", "UserId")
+                        .WithMany("Carts")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -659,8 +666,7 @@ namespace Backend.Migrations
 
             modelBuilder.Entity("Backend.Models.User", b =>
                 {
-                    b.Navigation("Cart")
-                        .IsRequired();
+                    b.Navigation("Carts");
                 });
 #pragma warning restore 612, 618
         }

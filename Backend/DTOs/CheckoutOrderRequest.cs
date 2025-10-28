@@ -7,6 +7,8 @@
     }
     public class CheckoutOrderRequest
     {
+        [System.ComponentModel.DataAnnotations.Range(0.01, double.MaxValue, ErrorMessage = "Tổng tiền phải lớn hơn 0")]
+        public decimal TotalAmount { get; set; }
         public int UserId { get; set; }
         public string ShippingAddress { get; set; } = null!;
         public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.COD;
@@ -21,6 +23,8 @@
 
     public class CheckoutRentalByDaysRequest
     {
+        [System.ComponentModel.DataAnnotations.Range(0.01, double.MaxValue, ErrorMessage = "Tổng tiền phải lớn hơn 0")]
+        public decimal TotalAmount { get; set; }
         public int UserId { get; set; }
         public List<CheckoutRentalItemDto> Items { get; set; } = new();
     }
@@ -33,6 +37,8 @@
 
     public class CheckoutRentalByDatesRequest
     {
+        [System.ComponentModel.DataAnnotations.Range(0.01, double.MaxValue, ErrorMessage = "Tổng tiền phải lớn hơn 0")]
+        public decimal TotalAmount { get; set; }
         public int UserId { get; set; }
         public DateTime StartDateUtc { get; set; }       // client gửi UTC (khuyên dùng)
         public DateTime EndDateUtc { get; set; }         // exclusive
