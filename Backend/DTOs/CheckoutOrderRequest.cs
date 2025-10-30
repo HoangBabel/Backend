@@ -7,7 +7,6 @@
     }
     public class CheckoutOrderRequest
     {
-        public int UserId { get; set; }
         public string ShippingAddress { get; set; } = null!;
         public string? VoucherCode { get; set; }  // có thể null
         public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.COD;

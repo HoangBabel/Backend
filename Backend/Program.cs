@@ -1,9 +1,10 @@
-﻿using Backend.Data;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
+﻿using System.Text;
+using Backend.Data;
+using Backend.Models;
 using Backend.Services;
-using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,11 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ICheckoutService, CheckoutService>();
+// options
+builder.Services.Configure<PayOSOptions>(builder.Configuration.GetSection("PayOS"));
+
+// Dùng HttpClient vì service có gọi API PayOS
+builder.Services.AddHttpClient<IPayOSService, PayOSService>();
 // Thêm vào Program.cs
 builder.Services.AddScoped<IEmailService, EmailService>();
 

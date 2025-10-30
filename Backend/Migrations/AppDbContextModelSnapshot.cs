@@ -46,7 +46,7 @@ namespace Backend.Migrations
                         .HasDatabaseName("IX_Carts_UserId_NotCheckedOut")
                         .HasFilter("[IsCheckedOut] = 0");
 
-                    b.ToTable("Carts");
+                    b.ToTable("Carts", (string)null);
                 });
 
             modelBuilder.Entity("Backend.Models.CartItem", b =>
@@ -78,7 +78,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("CartItems");
+                    b.ToTable("CartItems", (string)null);
                 });
 
             modelBuilder.Entity("Backend.Models.Category", b =>
@@ -96,7 +96,7 @@ namespace Backend.Migrations
 
                     b.HasKey("CategoryId");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
 
                     b.HasData(
                         new
@@ -178,7 +178,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("VoucherId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("Backend.Models.OrderItem", b =>
@@ -207,7 +207,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItems");
+                    b.ToTable("OrderItems", (string)null);
                 });
 
             modelBuilder.Entity("Backend.Models.Product", b =>
@@ -263,7 +263,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
 
                     b.HasData(
                         new
@@ -406,7 +406,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Rentals");
+                    b.ToTable("Rentals", (string)null);
                 });
 
             modelBuilder.Entity("Backend.Models.RentalItem", b =>
@@ -438,7 +438,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("RentalId");
 
-                    b.ToTable("RentalItems");
+                    b.ToTable("RentalItems", (string)null);
                 });
 
             modelBuilder.Entity("Backend.Models.User", b =>
@@ -495,7 +495,7 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
 
                     b.HasData(
                         new
@@ -560,7 +560,7 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Vounchers");
+                    b.ToTable("Vounchers", (string)null);
                 });
 
             modelBuilder.Entity("Backend.Models.Cart", b =>

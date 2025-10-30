@@ -10,7 +10,7 @@ namespace Backend.Services;
 
     public interface ICheckoutService
     {
-        Task<CheckoutOrderResponse> CheckoutOrderAsync(CheckoutOrderRequest req, CancellationToken ct = default);
+        Task<CheckoutOrderResponse> CheckoutOrderAsync(int userId, CheckoutOrderRequest req, CancellationToken ct);
         Task<CheckoutRentalResponse> CheckoutRentalByDaysAsync(CheckoutRentalByDaysRequest req, CancellationToken ct = default);
         Task<CheckoutRentalResponse> CheckoutRentalByDatesAsync(CheckoutRentalByDatesRequest req, CancellationToken ct = default);
     }
@@ -97,21 +97,21 @@ namespace Backend.Services;
     //        throw;
     //    }
     //}
-    public async Task<CheckoutOrderResponse> CheckoutOrderAsync(CheckoutOrderRequest req, CancellationToken ct)
+    public async Task<CheckoutOrderResponse> CheckoutOrderAsync(int userId, CheckoutOrderRequest req, CancellationToken ct)
     {
-        // 1) Lấy giỏ hàng
+        // 1️⃣ Lấy giỏ hàng
         var cart = await _context.Carts
             .Include(c => c.Items)
             .ThenInclude(i => i.Product)
-            .FirstOrDefaultAsync(c => c.UserId == req.UserId && !c.IsCheckedOut, ct);
+            .FirstOrDefaultAsync(c => c.UserId == userId && !c.IsCheckedOut, ct);
 
         if (cart == null || !cart.Items.Any())
             throw new InvalidOperationException("Giỏ hàng trống hoặc không tồn tại.");
 
-        // 2) Tính subtotal (tổng tiền hàng)
+        // 2️⃣ Tính tổng
         var subtotal = cart.Items.Sum(i => i.UnitPrice * i.Quantity);
 
-        // 3) Nếu có voucher -> validate + tính discount
+        // 3️⃣ Áp dụng voucher nếu có
         Vouncher? voucher = null;
         decimal discount = 0m;
 
@@ -128,27 +128,23 @@ namespace Backend.Services;
             discount = CalcDiscount(voucher, subtotal);
         }
 
-        // 4) Tính final amount (sau giảm)
         var finalAmount = subtotal - discount;
         if (finalAmount < 0) finalAmount = 0;
 
-        // 5) Tạo đơn hàng và gắn voucher
         using var tx = await _context.Database.BeginTransactionAsync(ct);
         try
         {
             var order = new Order
             {
-                UserId = req.UserId,
+                UserId = userId,
                 OrderDate = DateTime.Now,
                 ShippingAddress = req.ShippingAddress,
                 PaymentMethod = req.PaymentMethod,
                 Status = OrderStatus.Pending,
-
                 TotalAmount = subtotal,
                 DiscountAmount = discount,
                 FinalAmount = finalAmount,
-
-                VoucherId = voucher?.Id,               // Gắn voucher vào đơn
+                VoucherId = voucher?.Id,
                 Voucher = voucher,
                 VoucherCodeSnapshot = voucher?.Code
             };
@@ -165,7 +161,6 @@ namespace Backend.Services;
 
             cart.IsCheckedOut = true;
 
-            // 6) Cập nhật lượt dùng voucher
             if (voucher != null)
             {
                 voucher.CurrentUsageCount += 1;
