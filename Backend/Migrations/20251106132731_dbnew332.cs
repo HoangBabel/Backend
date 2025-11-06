@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class updateVouncher1234 : Migration
+    public partial class dbnew332 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -162,6 +162,18 @@ namespace Backend.Migrations
                     PaymentMethod = table.Column<string>(type: "nvarchar(20)", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(20)", nullable: false),
                     ShippingAddress = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    ToProvinceId = table.Column<int>(type: "int", nullable: true),
+                    ToProvinceName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    ToDistrictId = table.Column<int>(type: "int", nullable: true),
+                    ToDistrictName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    ToWardCode = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    ToWardName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    ServiceId = table.Column<int>(type: "int", nullable: true),
+                    ServiceType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Weight = table.Column<int>(type: "int", nullable: true),
+                    Length = table.Column<int>(type: "int", nullable: true),
+                    Width = table.Column<int>(type: "int", nullable: true),
+                    Height = table.Column<int>(type: "int", nullable: true),
                     VoucherId = table.Column<int>(type: "int", nullable: true),
                     VoucherCodeSnapshot = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
                 },

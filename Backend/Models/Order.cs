@@ -42,6 +42,37 @@ namespace Backend.Models
         [Required, StringLength(255)]
         public string? ShippingAddress { get; set; }
 
+        // ===== THÊM CÁC TRƯỜNG MỚI CHO SHIPPING =====
+
+        // Thông tin địa chỉ chi tiết để tính phí ship
+        public int? ToProvinceId { get; set; }
+
+        [StringLength(100)]
+        public string? ToProvinceName { get; set; }
+
+        public int? ToDistrictId { get; set; }
+
+        [StringLength(100)]
+        public string? ToDistrictName { get; set; }
+
+        [StringLength(20)]
+        public string? ToWardCode { get; set; }
+
+        [StringLength(100)]
+        public string? ToWardName { get; set; }
+
+        // Thông tin giao hàng
+        public int? ServiceId { get; set; } = 53321; // Mặc định: GHN Tiết Kiệm
+
+        [StringLength(50)]
+        public string? ServiceType { get; set; }
+
+        // Thông tin kích thước/trọng lượng
+        public int? Weight { get; set; } // gram
+        public int? Length { get; set; } // cm
+        public int? Width { get; set; }  // cm
+        public int? Height { get; set; } // cm
+
         // Gắn voucher (nullable, để order không bắt buộc có voucher)
         public int? VoucherId { get; set; }
         public Vouncher? Voucher { get; set; }
