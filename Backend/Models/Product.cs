@@ -33,6 +33,9 @@ namespace Backend.Models
         public ProductStatus Status { get; set; } = ProductStatus.ConHang;
         [JsonIgnore]
         public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
+        [Required]
+        public bool IsRental { get; set; } = false;  // false = sản phẩm bán, true = chỉ cho thuê
+
         // Liên kết
         [JsonIgnore] // tránh vòng lặp khi trả Product, và tránh client post Category lồng
         public Category? Category { get; set; }
@@ -43,4 +46,5 @@ namespace Backend.Models
         ConHang = 0,   // Còn hàng
         HetHang = 1    // Hết hàng
     }
+    
 }
