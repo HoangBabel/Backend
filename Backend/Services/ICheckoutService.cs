@@ -18,86 +18,19 @@ namespace Backend.Services;
     public class CheckoutService : ICheckoutService
     {
         private readonly AppDbContext _context;
+        private readonly IShippingService _shippingService; // ✅ THÊM
 
-        public CheckoutService(AppDbContext context)
-        {
-            _context = context;
-        }
+    public CheckoutService(AppDbContext context, IShippingService shippingService)
+    {
+        _context = context;
+        _shippingService = shippingService;
+    }
 
-    //public async Task<CheckoutOrderResponse> CheckoutOrderAsync(CheckoutOrderRequest req, CancellationToken ct = default)
-    //{
-    //    var cart = await _context.Carts
-    //        .Include(c => c.Items)
-    //        .ThenInclude(i => i.Product)
-    //        .FirstOrDefaultAsync(c => c.UserId == req.UserId && !c.IsCheckedOut, ct);
-
-    //    if (cart == null || !cart.Items.Any())
-    //        throw new InvalidOperationException("Giỏ hàng trống hoặc không tồn tại.");
-
-    //    // Tính tổng + trừ tồn
-    //    decimal total = 0m;
-
-    //    await using var tx = await _context.Database.BeginTransactionAsync(ct);
-    //    try
-    //    {
-    //        foreach (var ci in cart.Items)
-    //        {
-    //            if (ci.Quantity <= 0)
-    //                throw new InvalidOperationException($"Số lượng không hợp lệ cho sản phẩm Id={ci.ProductId}.");
-
-    //            if (ci.Product == null)
-    //                throw new InvalidOperationException($"Sản phẩm Id={ci.ProductId} không tồn tại.");
-
-    //            if (ci.Product.Quantity < ci.Quantity)
-    //                throw new InvalidOperationException($"Sản phẩm '{ci.Product.Name}' không đủ tồn.");
-
-    //            total += ci.UnitPrice * ci.Quantity;
-
-    //            // Trừ tồn theo số lượng mua
-    //            ci.Product.Quantity -= ci.Quantity;
-    //        }
-
-    //        var order = new Order
-    //        {
-    //            UserId = req.UserId,
-    //            TotalAmount = total,
-    //            ShippingAddress = req.ShippingAddress,
-    //            PaymentMethod = req.PaymentMethod,
-    //            Status = OrderStatus.Pending,
-    //            Items = new List<OrderItem>()
-    //        };
-
-    //        foreach (var ci in cart.Items)
-    //        {
-    //            order.Items.Add(new OrderItem
-    //            {
-    //                ProductId = ci.ProductId,
-    //                Quantity = ci.Quantity,
-    //                UnitPrice = ci.UnitPrice
-    //            });
-    //        }
-
-    //        cart.IsCheckedOut = true;
-    //        cart.UpdatedAt = DateTime.UtcNow;
-
-    //        _context.Orders.Add(order);
-    //        await _context.SaveChangesAsync(ct);
-    //        await tx.CommitAsync(ct);
-
-    //        return new CheckoutOrderResponse
-    //        {
-    //            OrderId = order.Id,
-    //            TotalAmount = order.TotalAmount,
-    //            Message = "Đặt hàng thành công!"
-    //        };
-    //    }
-    //    catch
-    //    {
-    //        await tx.RollbackAsync(ct);
-    //        throw;
-    //    }
-    //}
-    public async Task<CheckoutOrderResponse> CheckoutOrderAsync(int userId, CheckoutOrderRequest req, CancellationToken ct)
+    // Services/CheckoutService.cs
+    public async Task<CheckoutOrderResponse> CheckoutOrderAsync(
+        int userId,
+        CheckoutOrderRequest req,
+        CancellationToken ct)
     {
         // 1️⃣ Lấy giỏ hàng
         var cart = await _context.Carts
@@ -108,10 +41,48 @@ namespace Backend.Services;
         if (cart == null || !cart.Items.Any())
             throw new InvalidOperationException("Giỏ hàng trống hoặc không tồn tại.");
 
-        // 2️⃣ Tính tổng
+        // 2️⃣ Tính tổng tiền hàng
         var subtotal = cart.Items.Sum(i => i.UnitPrice * i.Quantity);
 
-        // 3️⃣ Áp dụng voucher nếu có
+        // 3️⃣ ===== TÍNH TRỌNG LƯỢNG (KHÔNG CẦN Product.Weight) =====
+        int totalWeight = req.Weight ?? 0;
+
+        if (totalWeight == 0)
+        {
+            // Tính theo số lượng sản phẩm: 200g/sản phẩm
+            int totalItems = cart.Items.Sum(i => i.Quantity);
+            totalWeight = totalItems * 200;
+        }
+
+        // Đảm bảo trong khoảng hợp lệ của GHN
+        if (totalWeight < 200) totalWeight = 200;       // Tối thiểu 200g
+        if (totalWeight > 30000) totalWeight = 30000;   // Tối đa 30kg
+
+        // 4️⃣ ===== TÍNH PHÍ SHIP =====
+        var shippingRequest = new ShippingFeeRequest
+        {
+            ToDistrictId = req.ToDistrictId,
+            ToWardCode = req.ToWardCode,
+            ServiceId = req.ServiceId,
+            Weight = totalWeight,
+            Length = req.Length ?? 20,
+            Width = req.Width ?? 20,
+            Height = req.Height ?? 20,
+            InsuranceValue = (int)subtotal
+        };
+
+        var shippingResult = await _shippingService.CalculateShippingFeeAsync(shippingRequest);
+
+        if (!shippingResult.Success)
+        {
+            throw new InvalidOperationException(
+                $"Không thể tính phí vận chuyển: {shippingResult.ErrorMessage}"
+            );
+        }
+
+        decimal shippingFee = shippingResult.ShippingFee;
+
+        // 5️⃣ Áp dụng voucher nếu có
         Vouncher? voucher = null;
         decimal discount = 0m;
 
@@ -119,6 +90,7 @@ namespace Backend.Services;
         {
             var code = req.VoucherCode.Trim();
             voucher = await _context.Vounchers.FirstOrDefaultAsync(v => v.Code == code, ct);
+
             if (voucher == null)
                 throw new InvalidOperationException("Mã voucher không tồn tại.");
 
@@ -128,9 +100,11 @@ namespace Backend.Services;
             discount = CalcDiscount(voucher, subtotal);
         }
 
-        var finalAmount = subtotal - discount;
+        // 6️⃣ ===== TÍNH TỔNG CUỐI =====
+        var finalAmount = subtotal + shippingFee - discount;
         if (finalAmount < 0) finalAmount = 0;
 
+        // 7️⃣ Lưu Order
         using var tx = await _context.Database.BeginTransactionAsync(ct);
         try
         {
@@ -141,9 +115,26 @@ namespace Backend.Services;
                 ShippingAddress = req.ShippingAddress,
                 PaymentMethod = req.PaymentMethod,
                 Status = OrderStatus.Pending,
+
                 TotalAmount = subtotal,
+                ShippingFee = shippingFee,
                 DiscountAmount = discount,
                 FinalAmount = finalAmount,
+
+                ToProvinceId = req.ToProvinceId,
+                ToProvinceName = req.ToProvinceName,
+                ToDistrictId = req.ToDistrictId,
+                ToDistrictName = req.ToDistrictName,
+                ToWardCode = req.ToWardCode,
+                ToWardName = req.ToWardName,
+
+                ServiceId = shippingResult.ServiceId,
+                ServiceType = shippingResult.ServiceType,
+                Weight = totalWeight,
+                Length = req.Length ?? 20,
+                Width = req.Width ?? 20,
+                Height = req.Height ?? 20,
+
                 VoucherId = voucher?.Id,
                 Voucher = voucher,
                 VoucherCodeSnapshot = voucher?.Code
@@ -165,8 +156,11 @@ namespace Backend.Services;
             {
                 voucher.CurrentUsageCount += 1;
                 voucher.UsedAt = DateTime.UtcNow;
-                if (voucher.MaxUsageCount > 0 && voucher.CurrentUsageCount >= voucher.MaxUsageCount)
+                if (voucher.MaxUsageCount > 0 &&
+                    voucher.CurrentUsageCount >= voucher.MaxUsageCount)
+                {
                     voucher.IsValid = false;
+                }
             }
 
             _context.Orders.Add(order);
@@ -178,10 +172,13 @@ namespace Backend.Services;
                 Message = "Đặt hàng thành công.",
                 OrderId = order.Id,
                 Subtotal = subtotal,
+                ShippingFee = shippingFee,
                 Discount = discount,
                 FinalAmount = finalAmount,
                 PaymentMethod = req.PaymentMethod,
-                VoucherCode = voucher?.Code
+                VoucherCode = voucher?.Code,
+                ServiceType = shippingResult.ServiceType,
+                Weight = totalWeight
             };
         }
         catch
