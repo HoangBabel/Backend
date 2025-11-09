@@ -36,6 +36,8 @@ namespace Backend.Models
         [Required]
         public bool IsRental { get; set; } = false;  // false = sản phẩm bán, true = chỉ cho thuê
 
+        public ProductCondition Condition { get; set; } = ProductCondition.New;
+
         // Liên kết
         [JsonIgnore] // tránh vòng lặp khi trả Product, và tránh client post Category lồng
         public Category? Category { get; set; }
@@ -46,5 +48,11 @@ namespace Backend.Models
         ConHang = 0,   // Còn hàng
         HetHang = 1    // Hết hàng
     }
-    
+    public enum ProductCondition 
+    { 
+        New = 0,
+        LikeNew = 1,
+        Used = 2,
+        Refurbished = 3 
+    }
 }

@@ -1,0 +1,121 @@
+﻿using Backend.Data;
+using Backend.Helpers;
+using Backend.Models;
+using Microsoft.EntityFrameworkCore;
+using static Backend.DTOs.DailyRentalDtos;
+
+namespace Backend.Services
+{
+    public interface IDailyRentalService
+    {
+        Task<QuoteDailyResponseDto> GetDailyQuoteAsync(QuoteDailyRequestDto dto);
+        Task<CreateDailyRentalResponseDto> CreateDailyRentalAsync(CreateDailyRentalRequestDto dto, int userId);
+
+    }
+    public class DailyRentalService : IDailyRentalService
+    {
+        private readonly AppDbContext _db;
+        public DailyRentalService(AppDbContext db) => _db = db;
+
+        public async Task<QuoteDailyResponseDto> GetDailyQuoteAsync(QuoteDailyRequestDto dto)
+        {
+            var product = await _db.Products.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.IdProduct == dto.ProductId)
+                ?? throw new InvalidOperationException("Sản phẩm không tồn tại.");
+
+            if (!product.IsRental)
+                throw new InvalidOperationException("Sản phẩm này không hỗ trợ thuê.");
+
+            var plan = await _db.RentalPlans.AsNoTracking()
+         .FirstOrDefaultAsync(p => p.ProductId == dto.ProductId && p.Unit == RentalUnit.Day);
+
+            if (plan == null)
+            {
+                // Tự tạo plan + tiers từ giá bán
+                var _auto = await RentalPlanAutoGenerator.EnsureDailyPlanAsync(_db, dto.ProductId);
+                plan = _auto.plan;
+            }
+
+            int days = RentalPricingHelper.ComputeDays(dto.StartDate, dto.EndDate);
+            if (days < plan.MinUnits)
+                throw new InvalidOperationException($"Cần thuê tối thiểu {plan.MinUnits} ngày.");
+
+            var tiers = await _db.RentalPricingTiers.AsNoTracking()
+          .Where(t => t.ProductId == dto.ProductId)
+          .ToListAsync();
+
+            var (pricePerDay, appliedThreshold) =
+                RentalPricingHelper.PickTierPriceOrBase(days, tiers, plan.PricePerUnit);
+
+            var subtotal = Math.Round(pricePerDay * days, 2, MidpointRounding.AwayFromZero);
+
+            return new QuoteDailyResponseDto(days, pricePerDay, appliedThreshold, plan.Deposit, subtotal);
+        }
+
+        public async Task<CreateDailyRentalResponseDto> CreateDailyRentalAsync(CreateDailyRentalRequestDto dto, int userId)
+        {
+            // (Khuyến nghị) mở transaction + lock hàng Product để tránh race capacity
+            // using var tx = await _db.Database.BeginTransactionAsync();
+
+            var product = await _db.Products
+                .FirstOrDefaultAsync(p => p.IdProduct == dto.ProductId)
+                ?? throw new InvalidOperationException("Sản phẩm không tồn tại.");
+            if (!product.IsRental)
+                throw new InvalidOperationException("Sản phẩm này không hỗ trợ thuê.");
+
+            var plan = await _db.RentalPlans.AsNoTracking()
+        .FirstOrDefaultAsync(p => p.ProductId == dto.ProductId && p.Unit == RentalUnit.Day);
+
+            if (plan == null)
+            {
+                // Tự tạo plan + tiers từ giá bán
+                var _auto = await RentalPlanAutoGenerator.EnsureDailyPlanAsync(_db, dto.ProductId);
+                plan = _auto.plan;
+            }
+
+            int days = RentalPricingHelper.ComputeDays(dto.StartDate, dto.EndDate);
+            if (days < plan.MinUnits)
+                throw new InvalidOperationException($"Cần thuê tối thiểu {plan.MinUnits} ngày.");
+
+
+            var tiers = await _db.RentalPricingTiers.AsNoTracking()
+       .Where(t => t.ProductId == dto.ProductId)
+       .ToListAsync();
+            var (pricePerDay, _) = RentalPricingHelper.PickTierPriceOrBase(days, tiers, plan.PricePerUnit);
+
+            var rental = new Rental
+            {
+                UserId = userId,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
+                Status = RentalStatus.Pending
+            };
+            rental.EnsureValidDateRange();
+
+            var item = new RentalItem { ProductId = dto.ProductId };
+            item.SnapshotPricing(pricePerUnit: pricePerDay, deposit: plan.Deposit, lateFeePerUnit: plan.LateFeePerUnit);
+            item.SetUnits(days);
+
+            rental.Items.Add(item);
+            rental.RecalculateTotal();
+            rental.SnapshotDepositFromItems();
+
+            _db.Rentals.Add(rental);
+            await _db.SaveChangesAsync();
+
+            // await tx.CommitAsync();
+
+            var finalAmountToPay = rental.TotalPrice + rental.DepositPaid;
+
+            return new CreateDailyRentalResponseDto(
+                rental.Id,
+                rental.TotalPrice,
+                rental.DepositPaid,
+                finalAmountToPay,
+                rental.Status
+            );
+        }
+    }
+
+}
+

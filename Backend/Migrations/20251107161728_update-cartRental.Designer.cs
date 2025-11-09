@@ -4,6 +4,7 @@ using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251107161728_update-cartRental")]
+    partial class updatecartRental
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -63,10 +66,34 @@ namespace Backend.Migrations
                     b.Property<int>("CartId")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("LineTotal")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
 
                     b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("RentalDeposit")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("RentalEndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("RentalLateFeePerDay")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("RentalPricePerDay")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("RentalStartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RentalUnits")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
                         .HasColumnType("int");
 
                     b.Property<decimal>("UnitPrice")

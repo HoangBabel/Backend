@@ -105,6 +105,9 @@ public class CartController : ControllerBase
         if (product == null) return NotFound("Product not found");
         if (product.Status == ProductStatus.HetHang || product.Quantity <= 0)
             return BadRequest("Product is out of stock");
+        // Kiểm tra nếu là sản phẩm cho thuê
+        if (product.IsRental)
+            return BadRequest("Sản phẩm này chỉ cho thuê, không thể thêm vào giỏ hàng bán. Hãy dùng endpoint thêm thuê.");
 
         // Nếu muốn chặn vượt tồn kho (tuỳ chính sách):
         if (req.Quantity > product.Quantity) return BadRequest("Not enough stock");

@@ -20,6 +20,8 @@ namespace Backend.Data
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<Rental> Rentals { get; set; }
         public DbSet<RentalItem> RentalItems { get; set; }
+        public DbSet<RentalPlan> RentalPlans => Set<RentalPlan>();
+        public DbSet<RentalPricingTier> RentalPricingTiers => Set<RentalPricingTier>();
 
 
         public override int SaveChanges()
@@ -69,6 +71,47 @@ namespace Backend.Data
                 .IsUnique()
                 .HasFilter("[IsCheckedOut] = 0")
                 .HasDatabaseName("IX_Carts_UserId_NotCheckedOut");
+            // ===== CẤU HÌNH THUÊ THEO NGÀY =====
+
+            // 🔹 RentalPlan: (ProductId, Unit) duy nhất
+            modelBuilder.Entity<RentalPlan>()
+                .HasIndex(x => new { x.ProductId, x.Unit })
+                .IsUnique();
+
+            // 🔹 RentalPricingTier: (ProductId, ThresholdDays) duy nhất
+            modelBuilder.Entity<RentalPricingTier>()
+                .HasIndex(x => new { x.ProductId, x.ThresholdDays })
+                .IsUnique();
+
+            // 🔹 Quan hệ 1-n giữa Rental và RentalItem
+            modelBuilder.Entity<RentalItem>()
+                .HasOne(ri => ri.Rental)
+                .WithMany(r => r.Items)
+                .HasForeignKey(ri => ri.RentalId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // 🔹 Precision cho các cột decimal
+            modelBuilder.Entity<Rental>()
+                .Property(r => r.TotalPrice).HasPrecision(18, 2);
+            modelBuilder.Entity<Rental>()
+                .Property(r => r.DepositPaid).HasPrecision(18, 2);
+            modelBuilder.Entity<Rental>()
+                .Property(r => r.LateFee).HasPrecision(18, 2);
+            modelBuilder.Entity<Rental>()
+                .Property(r => r.CleaningFee).HasPrecision(18, 2);
+            modelBuilder.Entity<Rental>()
+                .Property(r => r.DamageFee).HasPrecision(18, 2);
+            modelBuilder.Entity<Rental>()
+                .Property(r => r.DepositRefund).HasPrecision(18, 2);
+
+            modelBuilder.Entity<RentalItem>()
+                .Property(ri => ri.PricePerUnitAtBooking).HasPrecision(18, 2);
+            modelBuilder.Entity<RentalItem>()
+                .Property(ri => ri.SubTotal).HasPrecision(18, 2);
+            modelBuilder.Entity<RentalItem>()
+                .Property(ri => ri.DepositAtBooking).HasPrecision(18, 2);
+            modelBuilder.Entity<RentalItem>()
+                .Property(ri => ri.LateFeePerUnitAtBooking).HasPrecision(18, 2);
 
             // Gọi hàm seed dữ liệu
             ProductSeed.Seed(modelBuilder);

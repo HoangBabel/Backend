@@ -39,6 +39,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 builder.Services.AddScoped<IShippingService, ShippingService>();
+builder.Services.AddScoped<IDailyRentalService, DailyRentalService>();
 // options
 builder.Services.Configure<PayOSOptions>(builder.Configuration.GetSection("PayOS"));
 

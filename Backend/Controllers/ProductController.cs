@@ -67,7 +67,10 @@ namespace Backend.Controllers
                 Price = request.Price,
                 Quantity = request.Quantity,
                 Description = request.Description,
-                Status = request.Status
+                Status = request.Status,
+                IsRental = request.IsRental,     
+                Condition = request.Condition
+
             };
 
             // ✅ Xử lý upload ảnh
@@ -187,5 +190,7 @@ namespace Backend.Controllers
         public string? Description { get; set; }
         public ProductStatus Status { get; set; }
         public IFormFile? ImageFile { get; set; }
+        public bool IsRental { get; set; } = false;
+        public ProductCondition Condition { get; set; } = ProductCondition.New;
     }
 }
