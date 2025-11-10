@@ -51,8 +51,8 @@ namespace Backend.Models
     public enum ProductCondition 
     { 
         New = 0,
-        LikeNew = 1,
-        Used = 2,
-        Refurbished = 3 
+       
+        Used = 1,
+     
     }
 }

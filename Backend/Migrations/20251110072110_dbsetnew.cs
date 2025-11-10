@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class dbnew332 : Migration
+    public partial class dbsetnew : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -24,6 +24,39 @@ namespace Backend.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Categories", x => x.CategoryId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RentalPlans",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ProductId = table.Column<int>(type: "int", nullable: false),
+                    Unit = table.Column<int>(type: "int", nullable: false),
+                    PricePerUnit = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    MinUnits = table.Column<int>(type: "int", nullable: false),
+                    Deposit = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    LateFeePerUnit = table.Column<decimal>(type: "decimal(18,2)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RentalPlans", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RentalPricingTiers",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ProductId = table.Column<int>(type: "int", nullable: false),
+                    ThresholdDays = table.Column<int>(type: "int", nullable: false),
+                    PricePerDay = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RentalPricingTiers", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -86,6 +119,8 @@ namespace Backend.Migrations
                     Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     Image = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Status = table.Column<string>(type: "nvarchar(20)", nullable: false),
+                    IsRental = table.Column<bool>(type: "bit", nullable: false),
+                    Condition = table.Column<int>(type: "int", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -133,8 +168,15 @@ namespace Backend.Migrations
                     UserId = table.Column<int>(type: "int", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    TotalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(20)", nullable: false)
+                    Status = table.Column<string>(type: "nvarchar(20)", nullable: false),
+                    ReturnedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    TotalPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    DepositPaid = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    LateFee = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    CleaningFee = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    DamageFee = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    DepositRefund = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -230,9 +272,11 @@ namespace Backend.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     RentalId = table.Column<int>(type: "int", nullable: false),
                     ProductId = table.Column<int>(type: "int", nullable: false),
-                    RentalDays = table.Column<int>(type: "int", nullable: false),
-                    PricePerDay = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    SubTotal = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    PricePerUnitAtBooking = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    Units = table.Column<int>(type: "int", nullable: false),
+                    SubTotal = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
+                    DepositAtBooking = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: true),
+                    LateFeePerUnitAtBooking = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -298,19 +342,29 @@ namespace Backend.Migrations
 
             migrationBuilder.InsertData(
                 table: "Products",
-                columns: new[] { "IdProduct", "CategoryId", "CreatedBy", "CreatedDate", "Description", "Image", "IsDeleted", "Name", "Price", "Quantity", "Status", "UpdatedBy", "UpdatedDate" },
+                columns: new[] { "IdProduct", "CategoryId", "Condition", "CreatedBy", "CreatedDate", "Description", "Image", "IsDeleted", "IsRental", "Name", "Price", "Quantity", "Status", "UpdatedBy", "UpdatedDate" },
                 values: new object[,]
                 {
-                    { 1, 1, null, null, "Smart Tivi 4K hiển thị sắc nét, hỗ trợ điều khiển bằng giọng nói.", null, false, "Tivi Samsung Crystal UHD 55 inch BU8000", 12990000m, 12, "ConHang", null, null },
-                    { 2, 1, null, null, "Màn hình OLED siêu mỏng, hỗ trợ Dolby Vision và Dolby Atmos.", null, false, "Tivi LG OLED evo 48 inch C3", 27990000m, 5, "ConHang", null, null },
-                    { 3, 2, null, null, "Công nghệ tiết kiệm điện Inverter, ngăn đông mềm Prime Fresh+.", null, false, "Tủ lạnh Panasonic Inverter 322 lít NR-BV361BPKV", 12490000m, 8, "ConHang", null, null },
-                    { 4, 2, null, null, "Làm lạnh nhanh, khử mùi bằng than hoạt tính, thiết kế sang trọng.", null, false, "Tủ lạnh Samsung Inverter 424 lít RT42CG6324B1SV", 14990000m, 7, "ConHang", null, null },
-                    { 5, 3, null, null, "Công nghệ UltraMix hòa tan bột giặt, giảm phai màu quần áo.", null, false, "Máy giặt Electrolux Inverter 10kg EWF1024BDWA", 8990000m, 10, "ConHang", null, null },
-                    { 6, 3, null, null, "AI Control tự động tối ưu chương trình giặt, tiết kiệm năng lượng.", null, false, "Máy giặt Samsung Inverter 9.5kg WW95T504DAW/SV", 8790000m, 6, "ConHang", null, null },
-                    { 7, 4, null, null, "Công nghệ Streamer khử khuẩn, tiết kiệm điện vượt trội.", null, false, "Máy lạnh Daikin Inverter 1.5 HP FTKY35WMVMV", 11490000m, 9, "ConHang", null, null },
-                    { 8, 4, null, null, "Làm lạnh nhanh, kháng khuẩn bằng ion bạc, vận hành êm ái.", null, false, "Máy lạnh LG Inverter 1 HP V10WIN", 8390000m, 11, "ConHang", null, null },
-                    { 9, 5, null, null, "Công nghệ Rapid Air giảm 90% dầu mỡ, vỏ thép sơn tĩnh điện.", null, false, "Nồi chiên không dầu Philips HD9200/90 4.1L", 2290000m, 15, "ConHang", null, null },
-                    { 10, 5, null, null, "Chức năng hâm, nấu, rã đông nhanh, điều khiển núm xoay cơ học.", null, false, "Lò vi sóng Sharp R-G226VN-BK 20 lít", 1990000m, 14, "ConHang", null, null }
+                    { 1, 1, 0, null, null, "Smart Tivi 4K hiển thị sắc nét, hỗ trợ điều khiển bằng giọng nói.", null, false, false, "Tivi Samsung Crystal UHD 55 inch BU8000", 12990000m, 12, "ConHang", null, null },
+                    { 2, 1, 0, null, null, "Màn hình OLED siêu mỏng, hỗ trợ Dolby Vision và Dolby Atmos.", null, false, false, "Tivi LG OLED evo 48 inch C3", 27990000m, 5, "ConHang", null, null },
+                    { 3, 2, 0, null, null, "Công nghệ tiết kiệm điện Inverter, ngăn đông mềm Prime Fresh+.", null, false, false, "Tủ lạnh Panasonic Inverter 322 lít NR-BV361BPKV", 12490000m, 8, "ConHang", null, null },
+                    { 4, 2, 0, null, null, "Làm lạnh nhanh, khử mùi bằng than hoạt tính, thiết kế sang trọng.", null, false, false, "Tủ lạnh Samsung Inverter 424 lít RT42CG6324B1SV", 14990000m, 7, "ConHang", null, null },
+                    { 5, 3, 0, null, null, "Công nghệ UltraMix hòa tan bột giặt, giảm phai màu quần áo.", null, false, false, "Máy giặt Electrolux Inverter 10kg EWF1024BDWA", 8990000m, 10, "ConHang", null, null },
+                    { 6, 3, 0, null, null, "AI Control tự động tối ưu chương trình giặt, tiết kiệm năng lượng.", null, false, false, "Máy giặt Samsung Inverter 9.5kg WW95T504DAW/SV", 8790000m, 6, "ConHang", null, null },
+                    { 7, 4, 0, null, null, "Công nghệ Streamer khử khuẩn, tiết kiệm điện vượt trội.", null, false, false, "Máy lạnh Daikin Inverter 1.5 HP FTKY35WMVMV", 11490000m, 9, "ConHang", null, null },
+                    { 8, 4, 0, null, null, "Làm lạnh nhanh, kháng khuẩn bằng ion bạc, vận hành êm ái.", null, false, false, "Máy lạnh LG Inverter 1 HP V10WIN", 8390000m, 11, "ConHang", null, null },
+                    { 9, 5, 0, null, null, "Công nghệ Rapid Air giảm 90% dầu mỡ, vỏ thép sơn tĩnh điện.", null, false, false, "Nồi chiên không dầu Philips HD9200/90 4.1L", 2290000m, 15, "ConHang", null, null },
+                    { 10, 5, 0, null, null, "Chức năng hâm, nấu, rã đông nhanh, điều khiển núm xoay cơ học.", null, false, false, "Lò vi sóng Sharp R-G226VN-BK 20 lít", 1990000m, 14, "ConHang", null, null },
+                    { 11, 1, 1, null, null, "Smart Tivi Full HD 43 inch cho thuê theo tháng, phù hợp sự kiện, văn phòng.", null, false, true, "Tivi Samsung 43 inch (Cho thuê)", 500000m, 20, "ConHang", null, null },
+                    { 12, 1, 1, null, null, "Smart Tivi 4K 55 inch cho thuê, hỗ trợ lắp đặt tận nơi.", null, false, true, "Tivi LG 55 inch 4K (Cho thuê)", 800000m, 15, "ConHang", null, null },
+                    { 13, 2, 1, null, null, "Tủ lạnh mini cho thuê theo tháng, phù hợp phòng trọ, sinh viên.", null, false, true, "Tủ lạnh 180 lít (Cho thuê)", 400000m, 25, "ConHang", null, null },
+                    { 14, 2, 1, null, null, "Tủ lạnh Inverter tiết kiệm điện cho thuê, bảo hành trong thời gian thuê.", null, false, true, "Tủ lạnh Inverter 350 lít (Cho thuê)", 700000m, 12, "ConHang", null, null },
+                    { 15, 3, 1, null, null, "Máy giặt cửa trên 8kg cho thuê, phù hợp gia đình nhỏ.", null, false, true, "Máy giặt 8kg (Cho thuê)", 450000m, 18, "ConHang", null, null },
+                    { 16, 3, 1, null, null, "Máy giặt Inverter tiết kiệm điện, vận hành êm ái cho thuê theo tháng.", null, false, true, "Máy giặt Inverter 9kg (Cho thuê)", 600000m, 10, "ConHang", null, null },
+                    { 17, 4, 1, null, null, "Máy lạnh 1 HP cho thuê theo tháng, bảo trì miễn phí.", null, false, true, "Máy lạnh 1 HP (Cho thuê)", 550000m, 30, "ConHang", null, null },
+                    { 18, 4, 1, null, null, "Máy lạnh Inverter tiết kiệm điện, làm lạnh nhanh cho thuê.", null, false, true, "Máy lạnh Inverter 1.5 HP (Cho thuê)", 750000m, 22, "ConHang", null, null },
+                    { 19, 5, 1, null, null, "Lò vi sóng cho thuê theo tháng, phù hợp văn phòng, phòng trọ.", null, false, true, "Lò vi sóng 20L (Cho thuê)", 200000m, 25, "ConHang", null, null },
+                    { 20, 5, 1, null, null, "Nồi chiên không dầu dung tích lớn cho thuê, phù hợp gia đình.", null, false, true, "Nồi chiên không dầu 5L (Cho thuê)", 250000m, 20, "ConHang", null, null }
                 });
 
             migrationBuilder.CreateIndex(
@@ -366,6 +420,18 @@ namespace Backend.Migrations
                 column: "RentalId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_RentalPlans_ProductId_Unit",
+                table: "RentalPlans",
+                columns: new[] { "ProductId", "Unit" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RentalPricingTiers_ProductId_ThresholdDays",
+                table: "RentalPricingTiers",
+                columns: new[] { "ProductId", "ThresholdDays" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Rentals_UserId",
                 table: "Rentals",
                 column: "UserId");
@@ -382,6 +448,12 @@ namespace Backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "RentalItems");
+
+            migrationBuilder.DropTable(
+                name: "RentalPlans");
+
+            migrationBuilder.DropTable(
+                name: "RentalPricingTiers");
 
             migrationBuilder.DropTable(
                 name: "Carts");

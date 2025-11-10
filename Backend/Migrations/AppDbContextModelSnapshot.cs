@@ -442,6 +442,136 @@ namespace Backend.Migrations
                             Price = 1990000m,
                             Quantity = 14,
                             Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 11,
+                            CategoryId = 1,
+                            Condition = 1,
+                            Description = "Smart Tivi Full HD 43 inch cho thuê theo tháng, phù hợp sự kiện, văn phòng.",
+                            IsDeleted = false,
+                            IsRental = true,
+                            Name = "Tivi Samsung 43 inch (Cho thuê)",
+                            Price = 500000m,
+                            Quantity = 20,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 12,
+                            CategoryId = 1,
+                            Condition = 1,
+                            Description = "Smart Tivi 4K 55 inch cho thuê, hỗ trợ lắp đặt tận nơi.",
+                            IsDeleted = false,
+                            IsRental = true,
+                            Name = "Tivi LG 55 inch 4K (Cho thuê)",
+                            Price = 800000m,
+                            Quantity = 15,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 13,
+                            CategoryId = 2,
+                            Condition = 1,
+                            Description = "Tủ lạnh mini cho thuê theo tháng, phù hợp phòng trọ, sinh viên.",
+                            IsDeleted = false,
+                            IsRental = true,
+                            Name = "Tủ lạnh 180 lít (Cho thuê)",
+                            Price = 400000m,
+                            Quantity = 25,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 14,
+                            CategoryId = 2,
+                            Condition = 1,
+                            Description = "Tủ lạnh Inverter tiết kiệm điện cho thuê, bảo hành trong thời gian thuê.",
+                            IsDeleted = false,
+                            IsRental = true,
+                            Name = "Tủ lạnh Inverter 350 lít (Cho thuê)",
+                            Price = 700000m,
+                            Quantity = 12,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 15,
+                            CategoryId = 3,
+                            Condition = 1,
+                            Description = "Máy giặt cửa trên 8kg cho thuê, phù hợp gia đình nhỏ.",
+                            IsDeleted = false,
+                            IsRental = true,
+                            Name = "Máy giặt 8kg (Cho thuê)",
+                            Price = 450000m,
+                            Quantity = 18,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 16,
+                            CategoryId = 3,
+                            Condition = 1,
+                            Description = "Máy giặt Inverter tiết kiệm điện, vận hành êm ái cho thuê theo tháng.",
+                            IsDeleted = false,
+                            IsRental = true,
+                            Name = "Máy giặt Inverter 9kg (Cho thuê)",
+                            Price = 600000m,
+                            Quantity = 10,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 17,
+                            CategoryId = 4,
+                            Condition = 1,
+                            Description = "Máy lạnh 1 HP cho thuê theo tháng, bảo trì miễn phí.",
+                            IsDeleted = false,
+                            IsRental = true,
+                            Name = "Máy lạnh 1 HP (Cho thuê)",
+                            Price = 550000m,
+                            Quantity = 30,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 18,
+                            CategoryId = 4,
+                            Condition = 1,
+                            Description = "Máy lạnh Inverter tiết kiệm điện, làm lạnh nhanh cho thuê.",
+                            IsDeleted = false,
+                            IsRental = true,
+                            Name = "Máy lạnh Inverter 1.5 HP (Cho thuê)",
+                            Price = 750000m,
+                            Quantity = 22,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 19,
+                            CategoryId = 5,
+                            Condition = 1,
+                            Description = "Lò vi sóng cho thuê theo tháng, phù hợp văn phòng, phòng trọ.",
+                            IsDeleted = false,
+                            IsRental = true,
+                            Name = "Lò vi sóng 20L (Cho thuê)",
+                            Price = 200000m,
+                            Quantity = 25,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 20,
+                            CategoryId = 5,
+                            Condition = 1,
+                            Description = "Nồi chiên không dầu dung tích lớn cho thuê, phù hợp gia đình.",
+                            IsDeleted = false,
+                            IsRental = true,
+                            Name = "Nồi chiên không dầu 5L (Cho thuê)",
+                            Price = 250000m,
+                            Quantity = 20,
+                            Status = "ConHang"
                         });
                 });
 
