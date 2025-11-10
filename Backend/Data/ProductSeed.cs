@@ -305,7 +305,7 @@ namespace Backend.Data
                     IdProduct = 20,
                     CategoryId = 5,
                     Name = "Nồi chiên không dầu 5L (Cho thuê)",
-                    Price = 250000m,
+                    Price = 25000m,
                     Quantity = 20,
                     Description = "Nồi chiên không dầu dung tích lớn cho thuê, phù hợp gia đình.",
                     Status = ProductStatus.ConHang,

@@ -1,16 +1,18 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Backend.Models;
 using Microsoft.Extensions.Options;
-using System.Text.Json.Nodes;
 
 namespace Backend.Services
 {
     public interface IPayOSService
     {
-        bool VerifyWebhookSignature(IDictionary<string, object?> data, string signature);
+        bool VerifyWebhookSignature(string rawDataJson, string signature);
         Task<PayOSCreatePaymentResult> CreatePaymentAsync(
         long orderCode, long amountVnd, string description, CancellationToken ct);
+        Task<PayOSCreatePaymentResult> CreatePaymentWithNewCodeAsync(long amountVnd, string description, CancellationToken ct);
 
     }
     public sealed class PayOSService : IPayOSService
@@ -33,86 +35,105 @@ namespace Backend.Services
 
         // ---------- Tạo link/QR ----------
         public async Task<PayOSCreatePaymentResult> CreatePaymentAsync(
-      long orderCode, long amountVnd, string description, CancellationToken ct)
+     long orderCode, long amountVnd, string description, CancellationToken ct)
         {
-            var dict = new SortedDictionary<string, string>(StringComparer.Ordinal)
+            // hàm con thực thi 1 lần với orderCode cụ thể
+            async Task<PayOSCreatePaymentResult> CallAsync(long oc)
             {
-                ["amount"] = amountVnd.ToString(),          // số nguyên VND
-                ["cancelUrl"] = _opt.CancelUrl,             // KHÔNG encode
-                ["description"] = description ?? string.Empty,
-                ["orderCode"] = orderCode.ToString(),
-                ["returnUrl"] = _opt.ReturnUrl              // KHÔNG encode
-            };
+                var dict = new SortedDictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["amount"] = amountVnd.ToString(CultureInfo.InvariantCulture), // số dạng invariant
+                    ["cancelUrl"] = _opt.CancelUrl,
+                    ["description"] = description ?? string.Empty,
+                    ["orderCode"] = oc.ToString(CultureInfo.InvariantCulture),
+                    ["returnUrl"] = _opt.ReturnUrl
+                };
 
-            var raw = BuildSignatureInput_NoEncode(dict);   // <-- dùng bản không encode
-            var signature = HmacSha256(raw, _opt.ChecksumKey);
+                var raw = BuildSignatureInput_NoEncode(dict);
+                var signature = HmacSha256(raw, _opt.ChecksumKey);
 
-            var payload = new
+                var payload = new
+                {
+                    orderCode = oc,
+                    amount = amountVnd,
+                    description,
+                    returnUrl = _opt.ReturnUrl,
+                    cancelUrl = _opt.CancelUrl,
+                    signature
+                };
+
+                using var resp = await _http.PostAsync(
+                    "/v2/payment-requests",
+                    new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"),
+                    ct);
+
+                var txt = await resp.Content.ReadAsStringAsync(ct);
+                resp.EnsureSuccessStatusCode();
+
+                using var doc = JsonDocument.Parse(txt);
+                var root = doc.RootElement;
+
+                var bodyCode = root.TryGetProperty("code", out var c) ? c.GetString() ?? "" : "";
+                var bodyDesc = root.TryGetProperty("desc", out var d) ? d.GetString() ?? "" : "";
+                if (!string.Equals(bodyCode, "00", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException($"PayOS failed: code={bodyCode}, desc={bodyDesc}, body={txt}");
+
+                var data = root.GetProperty("data");
+                var checkoutUrl = data.TryGetProperty("checkoutUrl", out var cu) ? cu.GetString() : null;
+                if (string.IsNullOrEmpty(checkoutUrl))
+                    throw new InvalidOperationException($"PayOS data.checkoutUrl is empty. body={txt}");
+
+                return new PayOSCreatePaymentResult
+                {
+                    CheckoutUrl = checkoutUrl!,
+                    QrCode = data.TryGetProperty("qrCode", out var qr) ? qr.GetString() : null,
+                    PaymentLinkId = data.TryGetProperty("paymentLinkId", out var pid) ? pid.GetString() : null
+                    // (nếu cần lưu oc về DB, bạn có thể mở rộng model để trả luôn OrderCode)
+                };
+            }
+
+            try
             {
-                orderCode,
-                amount = amountVnd,
-                description,
-                returnUrl = _opt.ReturnUrl,
-                cancelUrl = _opt.CancelUrl,
-                signature
-            };
-
-            using var resp = await _http.PostAsync(
-                "/v2/payment-requests",
-                new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"),
-                ct);
-
-            var txt = await resp.Content.ReadAsStringAsync(ct);
-            resp.EnsureSuccessStatusCode();
-
-            using var doc = JsonDocument.Parse(txt);
-            var root = doc.RootElement;
-
-            var bodyCode = root.TryGetProperty("code", out var c) ? c.GetString() ?? "" : "";
-            var bodyDesc = root.TryGetProperty("desc", out var d) ? d.GetString() ?? "" : "";
-
-            if (!string.Equals(bodyCode, "00", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException($"PayOS failed: code={bodyCode}, desc={bodyDesc}, body={txt}");
-
-            var data = root.GetProperty("data");
-            var checkoutUrl = data.TryGetProperty("checkoutUrl", out var cu) ? cu.GetString() : null;
-
-            if (string.IsNullOrEmpty(checkoutUrl))
-                throw new InvalidOperationException($"PayOS data.checkoutUrl is empty. body={txt}");
-
-            return new PayOSCreatePaymentResult
+                // thử với orderCode caller truyền vào
+                return await CallAsync(orderCode);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("code=231"))
             {
-                CheckoutUrl = checkoutUrl!,
-                QrCode = data.TryGetProperty("qrCode", out var qr) ? qr.GetString() : null,
-                PaymentLinkId = data.TryGetProperty("paymentLinkId", out var pid) ? pid.GetString() : null
-            };
+                // bị trùng -> sinh mã mới và thử lại 1 lần
+                var oc2 = NewOrderCode();
+                return await CallAsync(oc2);
+            }
         }
 
 
         // ---------- Verify webhook (bạn đang dùng) ----------
-        public bool VerifyWebhookSignature(IDictionary<string, object?> data, string signature)
+        public bool VerifyWebhookSignature(string rawDataJson, string signature)
         {
-            var sorted = new SortedDictionary<string, string>(StringComparer.Ordinal);
-            foreach (var kv in data) sorted[kv.Key] = kv.Value?.ToString() ?? "";
-
-            var raw = BuildSignatureInput_NoEncode(sorted);  // ❗ KHÔNG encode
-            var calc = HmacSha256(raw, _opt.ChecksumKey);
-
-            var ok = calc.Equals(signature, StringComparison.OrdinalIgnoreCase);
-            // TODO: log raw/calc/got khi ok==false để soi lệch
-            return ok;
-        }
-        private static string BuildSignatureInput(IDictionary<string, string> kvs)
-        {
-            var sb = new StringBuilder();
-            foreach (var kv in kvs)
+            using var doc = JsonDocument.Parse(rawDataJson);
+            var dict = new SortedDictionary<string, string>(StringComparer.Ordinal);
+            foreach (var p in doc.RootElement.EnumerateObject())
             {
-                if (sb.Length > 0) sb.Append('&');
-                sb.Append(kv.Key);
-                sb.Append('=');
-                sb.Append(Uri.EscapeDataString(kv.Value));
+                var v = p.Value;
+                dict[p.Name] = v.ValueKind switch
+                {
+                    JsonValueKind.String => v.GetString() ?? "",
+                    JsonValueKind.Number => v.GetRawText(),
+                    JsonValueKind.True => "true",
+                    JsonValueKind.False => "false",
+                    JsonValueKind.Null => "",
+                    _ => v.GetRawText()
+                };
             }
-            return sb.ToString();
+            var raw = BuildSignatureInput_NoEncode(dict);
+            var calc = HmacSha256(raw, _opt.ChecksumKey);
+            return calc.Equals(signature, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public async Task<PayOSCreatePaymentResult> CreatePaymentWithNewCodeAsync(
+    long amountVnd, string description, CancellationToken ct)
+        {
+            var oc = NewOrderCode();
+            return await CreatePaymentAsync(oc, amountVnd, description, ct);
         }
 
         private static string BuildSignatureInput_NoEncode(IDictionary<string, string> kvs)
@@ -138,5 +159,12 @@ namespace Backend.Services
             return sb.ToString();
         }
 
+        private static long NewOrderCode()
+        {
+            // millis + 3 số ngẫu nhiên để tránh trùng trong cùng mili-giây
+            var ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var rnd = Random.Shared.Next(100, 999);
+            return ts * 1000 + rnd;
+        }
     }
 }

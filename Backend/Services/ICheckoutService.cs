@@ -1,6 +1,7 @@
 ﻿    using Backend.Data;
     using Backend.DTOs;
-    using Backend.Models;
+using Backend.Helpers;
+using Backend.Models;
     using Microsoft.EntityFrameworkCore;
     using static Backend.Helpers.DateTimeHelper; // nếu bạn muốn dùng helper TZ VN
     using static Backend.Helpers.VoucherCalculator;
@@ -15,24 +16,35 @@ namespace Backend.Services;
         //Task<CheckoutRentalResponse> CheckoutRentalByDatesAsync(CheckoutRentalByDatesRequest req, CancellationToken ct = default);
     }
 
-    public class CheckoutService : ICheckoutService
-    {
-        private readonly AppDbContext _context;
-        private readonly IShippingService _shippingService; // ✅ THÊM
+public class CheckoutService : ICheckoutService
+{
+    private readonly AppDbContext _context;
+    private readonly IShippingService _shippingService;
+    private readonly IPayOSService _payOs;
 
-    public CheckoutService(AppDbContext context, IShippingService shippingService)
+    public CheckoutService(AppDbContext context, IShippingService shippingService, IPayOSService payOs)
     {
         _context = context;
         _shippingService = shippingService;
+        _payOs = payOs;
     }
 
-    // Services/CheckoutService.cs
+    private static long ToVnd(decimal money)
+        => (long)decimal.Round(money, 0, MidpointRounding.AwayFromZero);
+
+    private static long NewOrderCode()
+    {
+        var ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var rnd = Random.Shared.Next(100, 999);
+        return ts * 1000 + rnd; // tránh trùng khi gọi liên tục
+    }
+
     public async Task<CheckoutOrderResponse> CheckoutOrderAsync(
         int userId,
         CheckoutOrderRequest req,
         CancellationToken ct)
     {
-        // 1️⃣ Lấy giỏ hàng
+        // 1) Lấy giỏ
         var cart = await _context.Carts
             .Include(c => c.Items)
             .ThenInclude(i => i.Product)
@@ -41,24 +53,18 @@ namespace Backend.Services;
         if (cart == null || !cart.Items.Any())
             throw new InvalidOperationException("Giỏ hàng trống hoặc không tồn tại.");
 
-        // 2️⃣ Tính tổng tiền hàng
+        // 2) Tính tiền hàng
         var subtotal = cart.Items.Sum(i => i.UnitPrice * i.Quantity);
 
-        // 3️⃣ ===== TÍNH TRỌNG LƯỢNG (KHÔNG CẦN Product.Weight) =====
+        // 3) Tính khối lượng (fallback 200g/sp)
         int totalWeight = req.Weight ?? 0;
-
         if (totalWeight == 0)
         {
-            // Tính theo số lượng sản phẩm: 200g/sản phẩm
             int totalItems = cart.Items.Sum(i => i.Quantity);
-            totalWeight = totalItems * 200;
+            totalWeight = Math.Clamp(totalItems * 200, 200, 30000);
         }
 
-        // Đảm bảo trong khoảng hợp lệ của GHN
-        if (totalWeight < 200) totalWeight = 200;       // Tối thiểu 200g
-        if (totalWeight > 30000) totalWeight = 30000;   // Tối đa 30kg
-
-        // 4️⃣ ===== TÍNH PHÍ SHIP =====
+        // 4) Phí ship
         var shippingRequest = new ShippingFeeRequest
         {
             ToDistrictId = req.ToDistrictId,
@@ -72,39 +78,31 @@ namespace Backend.Services;
         };
 
         var shippingResult = await _shippingService.CalculateShippingFeeAsync(shippingRequest);
-
         if (!shippingResult.Success)
-        {
-            throw new InvalidOperationException(
-                $"Không thể tính phí vận chuyển: {shippingResult.ErrorMessage}"
-            );
-        }
+            throw new InvalidOperationException($"Không thể tính phí vận chuyển: {shippingResult.ErrorMessage}");
 
         decimal shippingFee = shippingResult.ShippingFee;
 
-        // 5️⃣ Áp dụng voucher nếu có
+        // 5) Voucher
         Vouncher? voucher = null;
         decimal discount = 0m;
-
         if (!string.IsNullOrWhiteSpace(req.VoucherCode))
         {
             var code = req.VoucherCode.Trim();
-            voucher = await _context.Vounchers.FirstOrDefaultAsync(v => v.Code == code, ct);
+            voucher = await _context.Vounchers.FirstOrDefaultAsync(v => v.Code == code, ct)
+                      ?? throw new InvalidOperationException("Mã voucher không tồn tại.");
 
-            if (voucher == null)
-                throw new InvalidOperationException("Mã voucher không tồn tại.");
-
-            if (!IsUsable(voucher, subtotal))
+            if (!VoucherValidator.IsUsable(voucher, subtotal))
                 throw new InvalidOperationException("Voucher không còn hiệu lực hoặc không đạt điều kiện.");
 
-            discount = CalcDiscount(voucher, subtotal);
+            discount = VoucherCalculator.CalcDiscount(voucher, subtotal);
         }
 
-        // 6️⃣ ===== TÍNH TỔNG CUỐI =====
+        // 6) Tổng cuối
         var finalAmount = subtotal + shippingFee - discount;
         if (finalAmount < 0) finalAmount = 0;
 
-        // 7️⃣ Lưu Order
+        // 7) Lưu Order
         using var tx = await _context.Database.BeginTransactionAsync(ct);
         try
         {
@@ -165,8 +163,55 @@ namespace Backend.Services;
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync(ct);
+
+            // 8) Nếu QR → tạo/ghi Payment (KHÔNG return ở đây)
+            if (req.PaymentMethod == PaymentMethod.QR && finalAmount > 0m)
+            {
+                // Idempotent: nếu đã có Payment 'Created' → tái dùng
+                var existing = await _context.Payments
+                    .Where(p => p.Type == PaymentType.Order && p.RefId == order.Id && p.Status == PaymentStatus.Created)
+                    .OrderByDescending(p => p.Id)
+                    .FirstOrDefaultAsync(ct);
+
+                if (existing == null)
+                {
+                    var orderCode = NewOrderCode();
+                    var amountVnd = ToVnd(finalAmount);
+                    var desc = $"ORDER-{order.Id}";
+
+                    PayOSCreatePaymentResult pay;
+
+                    try
+                    {
+                        pay = await _payOs.CreatePaymentAsync(orderCode, amountVnd, desc, ct);
+                    }
+                    catch (InvalidOperationException ex) when (ex.Message.Contains("code=231"))
+                    {
+                        // trùng orderCode → sinh mới và thử lại 1 lần
+                        orderCode = NewOrderCode();
+                        pay = await _payOs.CreatePaymentAsync(orderCode, amountVnd, desc, ct);
+                    }
+
+                    _context.Payments.Add(new Payment
+                    {
+                        PaymentLinkId = pay.PaymentLinkId,
+                        OrderCode = orderCode,
+                        Description = desc,
+                        Type = PaymentType.Order,
+                        RefId = order.Id,
+                        ExpectedAmount = amountVnd,
+                        Status = PaymentStatus.Created,
+                        CreatedAt = DateTime.UtcNow,
+                        RawPayload = pay.CheckoutUrl
+                    });
+
+                    await _context.SaveChangesAsync(ct);
+                }
+            }
+
             await tx.CommitAsync(ct);
 
+            // 9) RETURN MỘT LẦN Ở CUỐI HÀM
             return new CheckoutOrderResponse
             {
                 Message = "Đặt hàng thành công.",
@@ -187,148 +232,9 @@ namespace Backend.Services;
             throw;
         }
     }
+}
 
 
-    //public async Task<CheckoutRentalResponse> CheckoutRentalByDaysAsync(CheckoutRentalByDaysRequest req, CancellationToken ct = default)
-    //    {
-    //        if (req.Items == null || req.Items.Count == 0)
-    //            throw new InvalidOperationException("Đơn thuê phải có ít nhất 1 sản phẩm.");
 
-    //        var now = DateTime.UtcNow;
-
-    //        await using var tx = await _context.Database.BeginTransactionAsync(ct);
-    //        try
-    //        {
-    //            var rental = new Rental
-    //            {
-    //                UserId = req.UserId,
-    //                Status = RentalStatus.Pending,
-    //                StartDate = now,
-    //                Items = new List<RentalItem>()
-    //            };
-
-    //            foreach (var x in req.Items)
-    //            {
-    //                var product = await _context.Products.FirstOrDefaultAsync(p => p.IdProduct == x.ProductId, ct);
-    //                if (product == null)
-    //                    throw new InvalidOperationException($"Sản phẩm Id={x.ProductId} không tồn tại.");
-
-    //                if (product.Quantity <= 0)
-    //                    throw new InvalidOperationException($"Sản phẩm '{product.Name}' đã hết hàng.");
-
-    //                if (x.RentalDays <= 0)
-    //                    throw new InvalidOperationException($"RentalDays phải > 0 (ProductId={x.ProductId}).");
-
-    //                var pricePerDay = (x.PricePerDay.HasValue && x.PricePerDay.Value > 0) ? x.PricePerDay.Value : product.Price;
-
-    //                rental.Items.Add(new RentalItem
-    //                {
-    //                    ProductId = x.ProductId,
-    //                    RentalDays = x.RentalDays,
-    //                    PricePerDay = pricePerDay,
-    //                    SubTotal = pricePerDay * x.RentalDays
-    //                });
-
-    //                // Trừ tồn mỗi item = 1 đơn vị
-    //                product.Quantity -= 1;
-    //            }
-
-    //            rental.TotalPrice = rental.Items.Sum(i => i.SubTotal);
-    //            var maxDays = rental.Items.Max(i => i.RentalDays);
-    //            rental.EndDate = rental.StartDate.AddDays(maxDays);
-
-    //            _context.Rentals.Add(rental);
-    //            await _context.SaveChangesAsync(ct);
-    //            await tx.CommitAsync(ct);
-
-    //            return new CheckoutRentalResponse
-    //            {
-    //                RentalId = rental.Id,
-    //                RentalDays = maxDays,
-    //                Message = "Tạo đơn thuê thành công"
-    //            };
-    //        }
-    //        catch
-    //        {
-    //            await tx.RollbackAsync(ct);
-    //            throw;
-    //        }
-    //    }
-
-    //    public async Task<CheckoutRentalResponse> CheckoutRentalByDatesAsync(CheckoutRentalByDatesRequest req, CancellationToken ct = default)
-    //    {
-    //        if (req.Items == null || req.Items.Count == 0)
-    //            throw new InvalidOperationException("Đơn thuê phải có ít nhất 1 sản phẩm.");
-
-    //        // Bạn có thể dùng TZ Việt Nam nếu muốn validate theo ngày địa phương:
-    //        // var tz = GetVietNamTz();
-    //        // var startLocal = TimeZoneInfo.ConvertTimeFromUtc(req.StartDateUtc, tz).Date;
-    //        // var endLocal = TimeZoneInfo.ConvertTimeFromUtc(req.EndDateUtc, tz).Date;
-
-    //        var startUtc = DateTime.SpecifyKind(req.StartDateUtc, DateTimeKind.Utc);
-    //        var endUtc = DateTime.SpecifyKind(req.EndDateUtc, DateTimeKind.Utc);
-
-    //        if (endUtc <= startUtc)
-    //            throw new InvalidOperationException("EndDateUtc phải sau StartDateUtc.");
-
-    //        var rentalDays = (int)Math.Ceiling((endUtc - startUtc).TotalDays);
-    //        if (rentalDays < 1) rentalDays = 1;
-
-    //        await using var tx = await _context.Database.BeginTransactionAsync(ct);
-    //        try
-    //        {
-    //            var rental = new Rental
-    //            {
-    //                UserId = req.UserId,
-    //                Status = RentalStatus.Pending,
-    //                StartDate = startUtc,
-    //                EndDate = endUtc,
-    //                Items = new List<RentalItem>()
-    //            };
-
-    //            foreach (var x in req.Items)
-    //            {
-    //                var product = await _context.Products.FirstOrDefaultAsync(p => p.IdProduct == x.ProductId, ct);
-    //                if (product == null)
-    //                    throw new InvalidOperationException($"Sản phẩm Id={x.ProductId} không tồn tại.");
-
-    //                if (product.Quantity <= 0)
-    //                    throw new InvalidOperationException($"Sản phẩm '{product.Name}' đã hết hàng.");
-
-    //                var pricePerDay = (x.PricePerDay.HasValue && x.PricePerDay.Value > 0)
-    //                                  ? x.PricePerDay.Value
-    //                                  : product.Price;
-
-    //                rental.Items.Add(new RentalItem
-    //                {
-    //                    ProductId = x.ProductId,
-    //                    RentalDays = rentalDays,
-    //                    PricePerDay = pricePerDay,
-    //                    SubTotal = pricePerDay * rentalDays
-    //                });
-
-    //                product.Quantity -= 1;
-    //            }
-
-    //            rental.TotalPrice = rental.Items.Sum(i => i.SubTotal);
-
-    //            _context.Rentals.Add(rental);
-    //            await _context.SaveChangesAsync(ct);
-    //            await tx.CommitAsync(ct);
-
-    //            return new CheckoutRentalResponse
-    //            {
-    //                RentalId = rental.Id,
-    //                RentalDays = rentalDays,
-    //                Message = "Tạo đơn thuê thành công"
-    //            };
-    //        }
-    //        catch
-    //        {
-    //            await tx.RollbackAsync(ct);
-    //            throw;
-    //        }
-    //    }
-    }
 
 

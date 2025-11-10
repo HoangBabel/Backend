@@ -5,7 +5,7 @@
         public string code { get; set; } = "";          // "00" = success
         public string desc { get; set; } = "";
         public bool success { get; set; }
-        public Dictionary<string, object?> data { get; set; } = new(); // chứa orderCode, amount, description, ...
+        public System.Text.Json.JsonElement data { get; set; }   // <-- thay Dictionary
         public string signature { get; set; } = "";     // chữ ký của PayOS (HMAC)
     }
 

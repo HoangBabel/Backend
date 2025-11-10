@@ -21,6 +21,7 @@ namespace Backend.Data
         public DbSet<Rental> Rentals { get; set; }
         public DbSet<RentalItem> RentalItems { get; set; }
         public DbSet<RentalPlan> RentalPlans => Set<RentalPlan>();
+        public DbSet<Payment> Payments { get; set; } = null!;
         public DbSet<RentalPricingTier> RentalPricingTiers => Set<RentalPricingTier>();
 
 
@@ -112,6 +113,20 @@ namespace Backend.Data
                 .Property(ri => ri.DepositAtBooking).HasPrecision(18, 2);
             modelBuilder.Entity<RentalItem>()
                 .Property(ri => ri.LateFeePerUnitAtBooking).HasPrecision(18, 2);
+
+            // Unique index để tra nhanh theo PaymentLinkId
+            modelBuilder.Entity<Payment>()
+                .HasIndex(p => p.PaymentLinkId)
+                .IsUnique();
+
+            // (tuỳ) giới hạn độ dài để tránh col quá dài
+            modelBuilder.Entity<Payment>()
+                .Property(p => p.PaymentLinkId)
+                .HasMaxLength(100);
+
+            modelBuilder.Entity<Payment>()
+                .Property(p => p.RawPayload)
+                .HasMaxLength(4000);
 
             // Gọi hàm seed dữ liệu
             ProductSeed.Seed(modelBuilder);
