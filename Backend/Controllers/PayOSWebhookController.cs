@@ -120,8 +120,20 @@ public class PayOSWebhookController : ControllerBase
             if (rental.Status != RentalStatus.Active)
             {
                 rental.Status = RentalStatus.Active;
+
+                // ✅ Trừ số lượng trong kho
+                foreach (var item in rental.Items)
+                {
+                    var product = await _context.Products.FirstOrDefaultAsync(p => p.IdProduct == item.ProductId, ct);
+                    if (product != null)
+                    {
+                        // Đảm bảo không bị âm
+                        product.Quantity = Math.Max(0, product.Quantity - item.Units);
+                    }
+                }
+
                 await _context.SaveChangesAsync(ct);
-                _logger.LogInformation("🎉 [WEBHOOK] RENTAL #{RentalId} ACTIVATED", rentalId);
+                _logger.LogInformation("🎉 [WEBHOOK] RENTAL #{RentalId} ACTIVATED & STOCK UPDATED", rentalId);
             }
 
             await MarkPaymentPaidIfTracked(payRow.PaymentLinkId, ct);
@@ -132,7 +144,12 @@ public class PayOSWebhookController : ControllerBase
         if (kind == "ORDER")
         {
             var orderId = payRow.RefId;
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId, ct);
+
+            // Cần include Items (và Product nếu muốn sờ trực tiếp)
+            var order = await _context.Orders
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.Id == orderId, ct);
+
             if (order == null)
                 return Ok(new { message = "OK_ORDER_NOT_FOUND", orderId });
 
@@ -142,15 +159,32 @@ public class PayOSWebhookController : ControllerBase
 
             if (order.Status is OrderStatus.Pending or OrderStatus.Processing)
             {
+                // (khuyến nghị) transaction để đảm bảo tính nhất quán
+                await using var tx = await _context.Database.BeginTransactionAsync(ct);
+
+                // ✅ Trừ tồn kho theo từng item (idempotent vì chỉ chạy khi chưa Completed)
+                foreach (var item in order.Items)
+                {
+                    var product = await _context.Products
+                        .FirstOrDefaultAsync(p => p.IdProduct == item.ProductId, ct);
+
+                    if (product != null)
+                    {
+                        // tránh âm kho, có thể log nếu thiếu tồn
+                        product.Quantity = Math.Max(0, product.Quantity - item.Quantity);
+                    }
+                }
+
                 order.Status = OrderStatus.Completed;
                 await _context.SaveChangesAsync(ct);
+                await tx.CommitAsync(ct);
+
                 await MarkPaymentPaidIfTracked(payRow.PaymentLinkId, ct);
-                _logger.LogInformation("🎉 [WEBHOOK] ORDER #{OrderId} COMPLETED", orderId);
+                _logger.LogInformation("🎉 [WEBHOOK] ORDER #{OrderId} COMPLETED & STOCK UPDATED", orderId);
             }
 
             return Ok(new { message = "OK_ORDER_UPDATED", orderId });
         }
-
         // 🔚 Fallback cuối: nếu vì lý do gì đó không vào nhánh nào, vẫn phải return
         _logger.LogWarning("⚠️ [WEBHOOK] UNKNOWN_KIND kind={Kind}, orderCode={OrderCode}", kind, data.orderCode);
         return Ok(new { message = "OK_UNKNOWN_KIND", kind, data.orderCode });

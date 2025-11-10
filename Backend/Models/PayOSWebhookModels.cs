@@ -36,5 +36,6 @@
         public string CheckoutUrl { get; set; } = null!;
         public string? QrCode { get; set; } // có thể null
         public string? PaymentLinkId { get; set; }
+        public long OrderCodeUsed { get; set; }
     }
 }

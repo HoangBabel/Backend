@@ -10,9 +10,13 @@ namespace Backend.Services
     public interface IPayOSService
     {
         bool VerifyWebhookSignature(string rawDataJson, string signature);
+
+        // Trả về PayOSCreatePaymentResult (trong đó có OrderCodeUsed)
         Task<PayOSCreatePaymentResult> CreatePaymentAsync(
-        long orderCode, long amountVnd, string description, CancellationToken ct);
-        Task<PayOSCreatePaymentResult> CreatePaymentWithNewCodeAsync(long amountVnd, string description, CancellationToken ct);
+            long orderCode, long amountVnd, string description, CancellationToken ct);
+
+        Task<PayOSCreatePaymentResult> CreatePaymentWithNewCodeAsync(
+            long amountVnd, string description, CancellationToken ct);
 
     }
     public sealed class PayOSService : IPayOSService
@@ -62,17 +66,15 @@ namespace Backend.Services
                     signature
                 };
 
-                using var resp = await _http.PostAsync(
-                    "/v2/payment-requests",
-                    new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"),
-                    ct);
+                using var resp = await _http.PostAsync("/v2/payment-requests",
+             new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"),
+             ct);
 
                 var txt = await resp.Content.ReadAsStringAsync(ct);
                 resp.EnsureSuccessStatusCode();
 
                 using var doc = JsonDocument.Parse(txt);
                 var root = doc.RootElement;
-
                 var bodyCode = root.TryGetProperty("code", out var c) ? c.GetString() ?? "" : "";
                 var bodyDesc = root.TryGetProperty("desc", out var d) ? d.GetString() ?? "" : "";
                 if (!string.Equals(bodyCode, "00", StringComparison.OrdinalIgnoreCase))
@@ -87,14 +89,13 @@ namespace Backend.Services
                 {
                     CheckoutUrl = checkoutUrl!,
                     QrCode = data.TryGetProperty("qrCode", out var qr) ? qr.GetString() : null,
-                    PaymentLinkId = data.TryGetProperty("paymentLinkId", out var pid) ? pid.GetString() : null
-                    // (nếu cần lưu oc về DB, bạn có thể mở rộng model để trả luôn OrderCode)
+                    PaymentLinkId = data.TryGetProperty("paymentLinkId", out var pid) ? pid.GetString() : null,
+                    OrderCodeUsed = oc                                 // ✅ gán mã thực dùng
                 };
             }
 
             try
             {
-                // thử với orderCode caller truyền vào
                 return await CallAsync(orderCode);
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("code=231"))
@@ -130,11 +131,12 @@ namespace Backend.Services
         }
 
         public async Task<PayOSCreatePaymentResult> CreatePaymentWithNewCodeAsync(
-    long amountVnd, string description, CancellationToken ct)
+        long amountVnd, string description, CancellationToken ct)
         {
             var oc = NewOrderCode();
             return await CreatePaymentAsync(oc, amountVnd, description, ct);
         }
+
 
         private static string BuildSignatureInput_NoEncode(IDictionary<string, string> kvs)
         {

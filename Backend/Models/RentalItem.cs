@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Org.BouncyCastle.Utilities;
 
 namespace Backend.Models
 {
@@ -44,6 +45,10 @@ namespace Backend.Models
         [JsonIgnore]
         public Product Product { get; set; } = null!;
 
+        // ✅ số lượng thiết bị thuê (mặc định 1)
+        public int Quantity { get; set; } = 1;
+
+
         // ==== Snapshot pricing tại thời điểm đặt (theo ngày) ====
         [Column(TypeName = "decimal(18,2)")]
         public decimal PricePerUnitAtBooking { get; private set; }  // giá/ngày đã chốt
@@ -62,7 +67,7 @@ namespace Backend.Models
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal? LateFeePerUnitAtBooking { get; private set; }
-
+      
         // ===== Methods (server-side only) =====
         public void SnapshotPricing(decimal pricePerUnit, decimal? deposit = null, decimal? lateFeePerUnit = null)
         {
@@ -78,6 +83,7 @@ namespace Backend.Models
             RecalculateSubTotal();
         }
 
+
         public void SetUnits(int units)
         {
             if (units <= 0) throw new ArgumentOutOfRangeException(nameof(units));
@@ -85,17 +91,24 @@ namespace Backend.Models
             RecalculateSubTotal();
         }
 
+        public void SetQuantity(int qty)
+        {
+            if (qty <= 0) throw new ArgumentOutOfRangeException(nameof(qty));
+            Quantity = qty;
+            RecalculateSubTotal();
+        }
+
         private void RecalculateSubTotal()
         {
-            // Nếu chưa có price, SubTotal = 0; sẽ được tính lại khi snapshot xong
-            if (PricePerUnitAtBooking <= 0 || Units <= 0)
+            if (PricePerUnitAtBooking <= 0 || Units <= 0 || Quantity <= 0)
             {
                 SubTotal = 0m;
                 return;
             }
 
+            // ✅ tiền thuê = giá/ngày * số ngày * số lượng
             SubTotal = Math.Round(
-                PricePerUnitAtBooking * Units,
+                PricePerUnitAtBooking * Units * Quantity,
                 2,
                 MidpointRounding.AwayFromZero
             );

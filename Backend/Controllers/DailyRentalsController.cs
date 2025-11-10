@@ -54,10 +54,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = GetUserId(User);
-                var res = await _svc.CreateDailyRentalAsync(new CreateDailyRentalRequestDto(
-                    // truyền dto mới KHÔNG có user, service signature đổi tương ứng
-                    ProductId: dto.ProductId, StartDate: dto.StartDate, EndDate: dto.EndDate
-                ), userId); // truyền userId riêng
+                var res = await _svc.CreateDailyRentalAsync(dto, userId); // ✅ giữ nguyên quantity
                 return CreatedAtAction(nameof(GetById), new { id = res.RentalId }, res);
             }
             catch (Exception ex) { return BadRequest(ex.Message); }

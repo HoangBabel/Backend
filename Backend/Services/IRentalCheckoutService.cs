@@ -81,18 +81,22 @@ namespace Backend.Services
             }
 
             // Tạo link mới (quan trọng: orderCode = rental.Id, description = "RENTAL")
-            var pay = await _payOs.CreatePaymentWithNewCodeAsync(amountVnd, "RENTAL", ct);
+            var desc = $"RENTAL-{rental.Id}";
+            var pay = await _payOs.CreatePaymentWithNewCodeAsync(amountVnd, desc, ct);
+            var orderCodeUsed = pay.OrderCodeUsed; // truy cập thuộc tính
 
-            // Lưu map để webhook đối soát & idempotent
             _context.Payments.Add(new Payment
             {
                 PaymentLinkId = pay.PaymentLinkId!,
+                OrderCode = orderCodeUsed,     // ✅ LƯU CODE THỰC SỰ ĐÃ DÙNG
+                Description = desc,              // ví dụ: RENTAL-8
                 Type = PaymentType.Rental,
                 RefId = rental.Id,
                 ExpectedAmount = amountVnd,
                 Status = PaymentStatus.Created,
                 CreatedAt = DateTime.UtcNow,
-                RawPayload = pay.CheckoutUrl     // tận dụng để lưu URL (hoặc tạo cột riêng)
+                RawPayload = pay.CheckoutUrl,
+                QrCode      = pay.QrCode,        // nếu có cột
             });
             await _context.SaveChangesAsync(ct);
 

@@ -99,7 +99,7 @@ namespace Backend.Models
 
         public void SnapshotDepositFromItems()
         {
-            DepositPaid = Items.Sum(i => i.DepositAtBooking ?? 0m);
+            DepositPaid = Items.Sum(i => (i.DepositAtBooking ?? 0m) * i.Quantity);
         }
 
         public void Activate()

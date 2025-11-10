@@ -710,6 +710,9 @@ namespace Backend.Migrations
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
 
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
                     b.Property<int>("RentalId")
                         .HasColumnType("int");
 
