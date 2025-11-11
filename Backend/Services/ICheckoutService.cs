@@ -12,8 +12,7 @@ namespace Backend.Services;
     public interface ICheckoutService
     {
         Task<CheckoutOrderResponse> CheckoutOrderAsync(int userId, CheckoutOrderRequest req, CancellationToken ct);
-        //Task<CheckoutRentalResponse> CheckoutRentalByDaysAsync(CheckoutRentalByDaysRequest req, CancellationToken ct = default);
-        //Task<CheckoutRentalResponse> CheckoutRentalByDatesAsync(CheckoutRentalByDatesRequest req, CancellationToken ct = default);
+       
     }
 
 public class CheckoutService : ICheckoutService
@@ -21,12 +20,14 @@ public class CheckoutService : ICheckoutService
     private readonly AppDbContext _context;
     private readonly IShippingService _shippingService;
     private readonly IPayOSService _payOs;
+    private readonly IEmailService _emailService;
 
-    public CheckoutService(AppDbContext context, IShippingService shippingService, IPayOSService payOs)
+    public CheckoutService(AppDbContext context, IShippingService shippingService,  IPayOSService payOs, IEmailService emailService)
     {
         _context = context;
         _shippingService = shippingService;
         _payOs = payOs;
+        _emailService = emailService;
     }
 
     private static long ToVnd(decimal money)
@@ -211,7 +212,22 @@ public class CheckoutService : ICheckoutService
 
             await tx.CommitAsync(ct);
 
-            // 9) RETURN MỘT LẦN Ở CUỐI HÀM
+            // ✅ 9) GỬI EMAIL XÁC NHẬN ĐƠN HÀNG (background task)
+            var orderId = order.Id;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailService.SendOrderConfirmationEmailAsync(orderId, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    // Log lỗi nhưng không throw để không ảnh hưởng đến checkout
+                    Console.WriteLine($"❌ Failed to send order confirmation email for order {orderId}: {ex.Message}");
+                    // Có thể log vào database hoặc file log nếu cần
+                }
+            }, CancellationToken.None);
+            // 10) RETURN MỘT LẦN Ở CUỐI HÀM
             return new CheckoutOrderResponse
             {
                 Message = "Đặt hàng thành công.",
