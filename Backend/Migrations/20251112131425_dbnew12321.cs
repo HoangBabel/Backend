@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class dbnew : Migration
+    public partial class dbnew12321 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -113,12 +113,13 @@ namespace Backend.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Code = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Type = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DiscountValue = table.Column<int>(type: "int", nullable: true),
-                    DiscountPercent = table.Column<int>(type: "int", nullable: true),
-                    MaximumDiscount = table.Column<int>(type: "int", nullable: true),
-                    MinimumOrderValue = table.Column<int>(type: "int", nullable: false),
+                    DiscountValue = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    DiscountPercent = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    MaximumDiscount = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    MinimumOrderValue = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     ApplyToShipping = table.Column<bool>(type: "bit", nullable: false),
                     ExpirationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ShippingDiscountPercent = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     IsValid = table.Column<bool>(type: "bit", nullable: false),
                     UsedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     MaxUsageCount = table.Column<int>(type: "int", nullable: false),
@@ -385,6 +386,26 @@ namespace Backend.Migrations
                 table: "Users",
                 columns: new[] { "Id", "CreatedAt", "Email", "FullName", "IsActive", "IsTwoFactorEnabled", "PasswordHash", "PhoneNumber", "Role", "TwoFactorCode", "TwoFactorCodeExpiry", "Username" },
                 values: new object[] { 10, new DateTime(2025, 10, 16, 10, 32, 39, 924, DateTimeKind.Local).AddTicks(5745), "giang@example.com", "le giang", true, false, "$2a$11$zB0cPctNLMkRJqNbC7qc7eF.VvtXVr1KmCuGUEoXC331zdp4Q9J.a", "0773678161", "Admin", null, null, "giang" });
+
+            migrationBuilder.InsertData(
+                table: "Vounchers",
+                columns: new[] { "Id", "ApplyToShipping", "Code", "CurrentUsageCount", "DiscountPercent", "DiscountValue", "ExpirationDate", "IsValid", "MaxUsageCount", "MaximumDiscount", "MinimumOrderValue", "ShippingDiscountPercent", "Type", "UsedAt" },
+                values: new object[,]
+                {
+                    { 1, false, "GIAM500K", 0, null, 500000m, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 100, null, 5000000m, null, "fixed", null },
+                    { 2, false, "GIAM1M", 0, null, 1000000m, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 50, null, 10000000m, null, "fixed", null },
+                    { 3, false, "GIAM10", 0, 10m, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 200, 500000m, 2000000m, null, "percent", null },
+                    { 4, false, "GIAM20", 0, 20m, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 100, 1000000m, 5000000m, null, "percent", null },
+                    { 5, false, "GIAM30", 0, 30m, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 30, 2000000m, 10000000m, null, "percent", null },
+                    { 6, true, "FREESHIP", 0, null, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 500, null, 1000000m, null, "shipping", null },
+                    { 7, true, "SHIP50", 0, null, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 300, null, 500000m, 50m, "shipping", null },
+                    { 8, false, "COMBO200K", 0, null, 200000m, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 150, null, 3000000m, null, "fixed", null },
+                    { 9, false, "THUE100K", 0, null, 100000m, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 200, null, 1000000m, null, "fixed", null },
+                    { 10, false, "THUE15", 0, 15m, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 100, 300000m, 2000000m, null, "percent", null },
+                    { 11, false, "EXPIRED", 0, null, 500000m, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), true, 10, null, 1000000m, null, "fixed", null },
+                    { 12, false, "SOLDOUT", 5, 25m, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 5, 1000000m, 3000000m, null, "percent", null },
+                    { 13, true, "COMBOSHIP", 0, null, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 150, null, 3000000m, null, "shipping", null }
+                });
 
             migrationBuilder.InsertData(
                 table: "Products",

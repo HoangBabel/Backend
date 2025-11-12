@@ -89,21 +89,28 @@ namespace Backend.Services
 
             // 3) Áp dụng voucher
             Vouncher? voucher = null;
-            decimal discount = 0m;
+            decimal subtotalDiscount = 0m;
+            decimal shippingDiscount = 0m;
+            decimal totalDiscount = 0m;
+
             if (!string.IsNullOrWhiteSpace(req.VoucherCode))
             {
                 var code = req.VoucherCode.Trim();
                 voucher = await _context.Vounchers.FirstOrDefaultAsync(v => v.Code == code, ct)
                           ?? throw new InvalidOperationException("Mã voucher không tồn tại.");
 
-                if (!VoucherValidator.IsUsable(voucher, subtotal))
-                    throw new InvalidOperationException("Voucher không còn hiệu lực hoặc không đạt điều kiện.");
+                // ✅ Validate với error message chi tiết
+                if (!VoucherValidator.IsUsable(voucher, subtotal, out string errorMessage))
+                    throw new InvalidOperationException(errorMessage);
 
-                discount = VoucherCalculator.CalcDiscount(voucher, subtotal);
+                // ✅ Tính discount cho cả subtotal và shipping
+                var discountResult = VoucherCalculator.CalcDiscount(voucher, subtotal, shippingFee);
+                subtotalDiscount = discountResult.SubtotalDiscount;
+                shippingDiscount = discountResult.ShippingDiscount;
+                totalDiscount = discountResult.TotalDiscount;
             }
-
             // 4) Tổng cuối cùng
-            var finalAmt = subtotal + deposit + shippingFee - discount;
+            var finalAmt = subtotal + deposit + shippingFee - totalDiscount;
             if (finalAmt < 0) finalAmt = 0;
 
             // 5) Cập nhật thông tin shipping vào rental
@@ -127,7 +134,7 @@ namespace Backend.Services
             {
                 rental.VoucherId = voucher.Id;
                 rental.VoucherCodeSnapshot = voucher.Code;
-                rental.DiscountAmount = discount;
+                rental.DiscountAmount = totalDiscount;
 
                 voucher.CurrentUsageCount += 1;
                 voucher.UsedAt = DateTime.UtcNow;
@@ -148,7 +155,9 @@ namespace Backend.Services
                 Subtotal = subtotal,
                 Deposit = deposit,
                 ShippingFee = shippingFee,
-                Discount = discount,
+                SubtotalDiscount = subtotalDiscount,      // ✅ THÊM
+                ShippingDiscount = shippingDiscount,      // ✅ THÊM
+                Discount = totalDiscount,
                 FinalAmount = finalAmt,
                 PaymentMethod = req.PaymentMethod,
                 VoucherCode = voucher?.Code,

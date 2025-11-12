@@ -86,21 +86,29 @@ public class CheckoutService : ICheckoutService
 
         // 5) Voucher
         Vouncher? voucher = null;
-        decimal discount = 0m;
+        decimal subtotalDiscount = 0m;
+        decimal shippingDiscount = 0m;
+        decimal totalDiscount = 0m;
+
         if (!string.IsNullOrWhiteSpace(req.VoucherCode))
         {
             var code = req.VoucherCode.Trim();
             voucher = await _context.Vounchers.FirstOrDefaultAsync(v => v.Code == code, ct)
                       ?? throw new InvalidOperationException("Mã voucher không tồn tại.");
 
-            if (!VoucherValidator.IsUsable(voucher, subtotal))
-                throw new InvalidOperationException("Voucher không còn hiệu lực hoặc không đạt điều kiện.");
+            // ✅ Validate với error message chi tiết
+            if (!VoucherValidator.IsUsable(voucher, subtotal, out string errorMessage))
+                throw new InvalidOperationException(errorMessage);
 
-            discount = VoucherCalculator.CalcDiscount(voucher, subtotal);
+            // ✅ Tính discount cho cả subtotal và shipping
+            var discountResult = VoucherCalculator.CalcDiscount(voucher, subtotal, shippingFee);
+            subtotalDiscount = discountResult.SubtotalDiscount;
+            shippingDiscount = discountResult.ShippingDiscount;
+            totalDiscount = discountResult.TotalDiscount;
         }
 
         // 6) Tổng cuối
-        var finalAmount = subtotal + shippingFee - discount;
+        var finalAmount = subtotal + shippingFee - totalDiscount;
         if (finalAmount < 0) finalAmount = 0;
 
         // 7) Lưu Order
@@ -117,7 +125,7 @@ public class CheckoutService : ICheckoutService
 
                 TotalAmount = subtotal,
                 ShippingFee = shippingFee,
-                DiscountAmount = discount,
+                DiscountAmount = totalDiscount,
                 FinalAmount = finalAmount,
 
                 ToProvinceId = req.ToProvinceId,
@@ -234,7 +242,9 @@ public class CheckoutService : ICheckoutService
                 OrderId = order.Id,
                 Subtotal = subtotal,
                 ShippingFee = shippingFee,
-                Discount = discount,
+                SubtotalDiscount = subtotalDiscount,      // ✅ THÊM
+                ShippingDiscount = shippingDiscount,      // ✅ THÊM
+                Discount = totalDiscount,
                 FinalAmount = finalAmount,
                 PaymentMethod = req.PaymentMethod,
                 VoucherCode = voucher?.Code,

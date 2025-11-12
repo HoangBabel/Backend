@@ -32,7 +32,11 @@
         public decimal Subtotal { get; set; }
         public decimal Deposit { get; set; }
         public decimal ShippingFee { get; set; }
-        public decimal Discount { get; set; }
+
+        // ✅ Chi tiết discount
+        public decimal SubtotalDiscount { get; set; }
+        public decimal ShippingDiscount { get; set; }
+        public decimal Discount { get; set; }  // Tổng
         public decimal FinalAmount { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
         public string? VoucherCode { get; set; }

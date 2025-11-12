@@ -314,6 +314,246 @@ namespace Backend.Data
                     Condition = ProductCondition.Used
                 }
             );
+            modelBuilder.Entity<Vouncher>().HasData(
+// ✅ 1. Voucher Fixed - Giảm cố định
+                new Vouncher
+                {
+                    Id = 1,
+                    Code = "GIAM500K",
+                    Type = "fixed", // ✅ Viết thường
+                    DiscountValue = 500000m,
+                    DiscountPercent = null,
+                    MaximumDiscount = null,
+                    MinimumOrderValue = 5000000m,
+                    ApplyToShipping = false,
+                    ShippingDiscountPercent = null,
+                    ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅ UTC
+                    IsValid = true,
+                    UsedAt = null,
+                    MaxUsageCount = 100,
+                    CurrentUsageCount = 0
+                },
+                new Vouncher
+                {
+                    Id = 2,
+                    Code = "GIAM1M",
+                    Type = "fixed", // ✅
+                    DiscountValue = 1000000m,
+                    DiscountPercent = null,
+                    MaximumDiscount = null,
+                    MinimumOrderValue = 10000000m,
+                    ApplyToShipping = false,
+                    ShippingDiscountPercent = null,
+                    ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅
+                    IsValid = true,
+                    UsedAt = null,
+                    MaxUsageCount = 50,
+                    CurrentUsageCount = 0
+                },
+
+                // ✅ 2. Voucher Percent - Giảm %
+                new Vouncher
+                {
+                    Id = 3,
+                    Code = "GIAM10",
+                    Type = "percent", // ✅
+                    DiscountValue = null,
+                    DiscountPercent = 10m,
+                    MaximumDiscount = 500000m,
+                    MinimumOrderValue = 2000000m,
+                    ApplyToShipping = false,
+                    ShippingDiscountPercent = null,
+                    ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅
+                    IsValid = true,
+                    UsedAt = null,
+                    MaxUsageCount = 200,
+                    CurrentUsageCount = 0
+                },
+                new Vouncher
+                {
+                    Id = 4,
+                    Code = "GIAM20",
+                    Type = "percent", // ✅
+                    DiscountValue = null,
+                    DiscountPercent = 20m,
+                    MaximumDiscount = 1000000m,
+                    MinimumOrderValue = 5000000m,
+                    ApplyToShipping = false,
+                    ShippingDiscountPercent = null,
+                    ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅
+                    IsValid = true,
+                    UsedAt = null,
+                    MaxUsageCount = 100,
+                    CurrentUsageCount = 0
+                },
+                new Vouncher
+                {
+                    Id = 5,
+                    Code = "GIAM30",
+                    Type = "percent", // ✅
+                    DiscountValue = null,
+                    DiscountPercent = 30m,
+                    MaximumDiscount = 2000000m,
+                    MinimumOrderValue = 10000000m,
+                    ApplyToShipping = false,
+                    ShippingDiscountPercent = null,
+                    ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅
+                    IsValid = true,
+                    UsedAt = null,
+                    MaxUsageCount = 30,
+                    CurrentUsageCount = 0
+                },
+
+                // ✅ 3. Voucher Shipping - Miễn phí ship
+                new Vouncher
+                {
+                    Id = 6,
+                    Code = "FREESHIP",
+                    Type = "shipping", // ✅
+                    DiscountValue = null,
+                    DiscountPercent = null,
+                    MaximumDiscount = null,
+                    MinimumOrderValue = 1000000m,
+                    ApplyToShipping = true,
+                    ShippingDiscountPercent = null, // null = 100% freeship
+                    ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅
+                    IsValid = true,
+                    UsedAt = null,
+                    MaxUsageCount = 500,
+                    CurrentUsageCount = 0
+                },
+                new Vouncher
+                {
+                    Id = 7,
+                    Code = "SHIP50",
+                    Type = "shipping", // ✅
+                    DiscountValue = null,
+                    DiscountPercent = null,
+                    MaximumDiscount = null,
+                    MinimumOrderValue = 500000m,
+                    ApplyToShipping = true,
+                    ShippingDiscountPercent = 50m, // Giảm 50% ship
+                    ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅
+                    IsValid = true,
+                    UsedAt = null,
+                    MaxUsageCount = 300,
+                    CurrentUsageCount = 0
+                },
+
+                // ❌ 4. VOUCHER COMBO - KHÔNG HỢP LỆ - CẦN XÓA HOẶC SỬA
+                // Giải pháp 1: Xóa voucher này
+                // Giải pháp 2: Tách thành 2 voucher riêng
+                // Giải pháp 3: Sửa logic code để hỗ trợ combo
+
+                // ✅ Thay thế bằng 2 voucher riêng:
+                new Vouncher
+                {
+                    Id = 8,
+                    Code = "COMBO200K", // Giảm sản phẩm
+                    Type = "fixed", // ✅
+                    DiscountValue = 200000m,
+                    DiscountPercent = null,
+                    MaximumDiscount = null,
+                    MinimumOrderValue = 3000000m,
+                    ApplyToShipping = false, // ✅ Fixed không giảm ship
+                    ShippingDiscountPercent = null,
+                    ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅
+                    IsValid = true,
+                    UsedAt = null,
+                    MaxUsageCount = 150,
+                    CurrentUsageCount = 0
+                },
+                new Vouncher
+                {
+                    Id = 13, // Thêm voucher mới
+                    Code = "COMBOSHIP", // Miễn phí ship kèm
+                    Type = "shipping", // ✅
+                    DiscountValue = null,
+                    DiscountPercent = null,
+                    MaximumDiscount = null,
+                    MinimumOrderValue = 3000000m,
+                    ApplyToShipping = true,
+                    ShippingDiscountPercent = null, // 100% freeship
+                    ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅
+                    IsValid = true,
+                    UsedAt = null,
+                    MaxUsageCount = 150,
+                    CurrentUsageCount = 0
+                },
+
+                // ✅ 5. Voucher cho thuê
+                new Vouncher
+                {
+                    Id = 9,
+                    Code = "THUE100K",
+                    Type = "fixed", // ✅
+                    DiscountValue = 100000m,
+                    DiscountPercent = null,
+                    MaximumDiscount = null,
+                    MinimumOrderValue = 1000000m,
+                    ApplyToShipping = false,
+                    ShippingDiscountPercent = null,
+                    ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅
+                    IsValid = true,
+                    UsedAt = null,
+                    MaxUsageCount = 200,
+                    CurrentUsageCount = 0
+                },
+                new Vouncher
+                {
+                    Id = 10,
+                    Code = "THUE15",
+                    Type = "percent", // ✅
+                    DiscountValue = null,
+                    DiscountPercent = 15m,
+                    MaximumDiscount = 300000m,
+                    MinimumOrderValue = 2000000m,
+                    ApplyToShipping = false,
+                    ShippingDiscountPercent = null,
+                    ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅
+                    IsValid = true,
+                    UsedAt = null,
+                    MaxUsageCount = 100,
+                    CurrentUsageCount = 0
+                },
+
+                // ✅ 6. Test Cases
+                new Vouncher
+                {
+                    Id = 11,
+                    Code = "EXPIRED",
+                    Type = "fixed", // ✅
+                    DiscountValue = 500000m,
+                    DiscountPercent = null,
+                    MaximumDiscount = null,
+                    MinimumOrderValue = 1000000m,
+                    ApplyToShipping = false,
+                    ShippingDiscountPercent = null,
+                    ExpirationDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc), // ✅ Đã hết hạn
+                    IsValid = true, // ✅ Để validator tự phát hiện
+                    UsedAt = null,
+                    MaxUsageCount = 10,
+                    CurrentUsageCount = 0
+                },
+                new Vouncher
+                {
+                    Id = 12,
+                    Code = "SOLDOUT",
+                    Type = "percent", // ✅
+                    DiscountValue = null,
+                    DiscountPercent = 25m,
+                    MaximumDiscount = 1000000m,
+                    MinimumOrderValue = 3000000m,
+                    ApplyToShipping = false,
+                    ShippingDiscountPercent = null,
+                    ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅
+                    IsValid = true,
+                    UsedAt = null,
+                    MaxUsageCount = 5,
+                    CurrentUsageCount = 5 // Đã hết lượt
+                }
+
+                );
         }
     }
 }

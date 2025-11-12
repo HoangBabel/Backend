@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251111112238_dbnew")]
-    partial class dbnew
+    [Migration("20251112131425_dbnew12321")]
+    partial class dbnew12321
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -944,11 +944,11 @@ namespace Backend.Migrations
                     b.Property<int>("CurrentUsageCount")
                         .HasColumnType("int");
 
-                    b.Property<int?>("DiscountPercent")
-                        .HasColumnType("int");
+                    b.Property<decimal?>("DiscountPercent")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<int?>("DiscountValue")
-                        .HasColumnType("int");
+                    b.Property<decimal?>("DiscountValue")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("ExpirationDate")
                         .HasColumnType("datetime2");
@@ -959,11 +959,14 @@ namespace Backend.Migrations
                     b.Property<int>("MaxUsageCount")
                         .HasColumnType("int");
 
-                    b.Property<int?>("MaximumDiscount")
-                        .HasColumnType("int");
+                    b.Property<decimal?>("MaximumDiscount")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("MinimumOrderValue")
-                        .HasColumnType("int");
+                    b.Property<decimal>("MinimumOrderValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ShippingDiscountPercent")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Type")
                         .HasColumnType("nvarchar(max)");
@@ -974,6 +977,180 @@ namespace Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Vounchers");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            ApplyToShipping = false,
+                            Code = "GIAM500K",
+                            CurrentUsageCount = 0,
+                            DiscountValue = 500000m,
+                            ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 100,
+                            MinimumOrderValue = 5000000m,
+                            Type = "fixed"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            ApplyToShipping = false,
+                            Code = "GIAM1M",
+                            CurrentUsageCount = 0,
+                            DiscountValue = 1000000m,
+                            ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 50,
+                            MinimumOrderValue = 10000000m,
+                            Type = "fixed"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            ApplyToShipping = false,
+                            Code = "GIAM10",
+                            CurrentUsageCount = 0,
+                            DiscountPercent = 10m,
+                            ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 200,
+                            MaximumDiscount = 500000m,
+                            MinimumOrderValue = 2000000m,
+                            Type = "percent"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            ApplyToShipping = false,
+                            Code = "GIAM20",
+                            CurrentUsageCount = 0,
+                            DiscountPercent = 20m,
+                            ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 100,
+                            MaximumDiscount = 1000000m,
+                            MinimumOrderValue = 5000000m,
+                            Type = "percent"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            ApplyToShipping = false,
+                            Code = "GIAM30",
+                            CurrentUsageCount = 0,
+                            DiscountPercent = 30m,
+                            ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 30,
+                            MaximumDiscount = 2000000m,
+                            MinimumOrderValue = 10000000m,
+                            Type = "percent"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            ApplyToShipping = true,
+                            Code = "FREESHIP",
+                            CurrentUsageCount = 0,
+                            ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 500,
+                            MinimumOrderValue = 1000000m,
+                            Type = "shipping"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            ApplyToShipping = true,
+                            Code = "SHIP50",
+                            CurrentUsageCount = 0,
+                            ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 300,
+                            MinimumOrderValue = 500000m,
+                            ShippingDiscountPercent = 50m,
+                            Type = "shipping"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            ApplyToShipping = false,
+                            Code = "COMBO200K",
+                            CurrentUsageCount = 0,
+                            DiscountValue = 200000m,
+                            ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 150,
+                            MinimumOrderValue = 3000000m,
+                            Type = "fixed"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            ApplyToShipping = true,
+                            Code = "COMBOSHIP",
+                            CurrentUsageCount = 0,
+                            ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 150,
+                            MinimumOrderValue = 3000000m,
+                            Type = "shipping"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            ApplyToShipping = false,
+                            Code = "THUE100K",
+                            CurrentUsageCount = 0,
+                            DiscountValue = 100000m,
+                            ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 200,
+                            MinimumOrderValue = 1000000m,
+                            Type = "fixed"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            ApplyToShipping = false,
+                            Code = "THUE15",
+                            CurrentUsageCount = 0,
+                            DiscountPercent = 15m,
+                            ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 100,
+                            MaximumDiscount = 300000m,
+                            MinimumOrderValue = 2000000m,
+                            Type = "percent"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            ApplyToShipping = false,
+                            Code = "EXPIRED",
+                            CurrentUsageCount = 0,
+                            DiscountValue = 500000m,
+                            ExpirationDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 10,
+                            MinimumOrderValue = 1000000m,
+                            Type = "fixed"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            ApplyToShipping = false,
+                            Code = "SOLDOUT",
+                            CurrentUsageCount = 5,
+                            DiscountPercent = 25m,
+                            ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
+                            IsValid = true,
+                            MaxUsageCount = 5,
+                            MaximumDiscount = 1000000m,
+                            MinimumOrderValue = 3000000m,
+                            Type = "percent"
+                        });
                 });
 
             modelBuilder.Entity("Backend.Models.Cart", b =>
@@ -1015,7 +1192,7 @@ namespace Backend.Migrations
                         .IsRequired();
 
                     b.HasOne("Backend.Models.Vouncher", "Voucher")
-                        .WithMany()
+                        .WithMany("Orders")
                         .HasForeignKey("VoucherId");
 
                     b.Navigation("User");
@@ -1062,7 +1239,7 @@ namespace Backend.Migrations
                         .IsRequired();
 
                     b.HasOne("Backend.Models.Vouncher", "Voucher")
-                        .WithMany()
+                        .WithMany("Rentals")
                         .HasForeignKey("VoucherId");
 
                     b.Navigation("User");
@@ -1117,6 +1294,13 @@ namespace Backend.Migrations
             modelBuilder.Entity("Backend.Models.User", b =>
                 {
                     b.Navigation("Carts");
+                });
+
+            modelBuilder.Entity("Backend.Models.Vouncher", b =>
+                {
+                    b.Navigation("Orders");
+
+                    b.Navigation("Rentals");
                 });
 #pragma warning restore 612, 618
         }
