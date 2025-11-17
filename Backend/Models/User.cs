@@ -30,27 +30,39 @@ namespace Backend.Models
         [RegularExpression(@"^0\d{9,10}$", ErrorMessage = "Số điện thoại phải bắt đầu bằng 0 và có 10-11 chữ số")]
         public string PhoneNumber { get; set; } = null!;
 
+        // 🏠 Địa chỉ người dùng
+        [StringLength(255, ErrorMessage = "Địa chỉ tối đa 255 ký tự")]
+        public string? Address { get; set; }
+
         [Required]
         [Column(TypeName = "nvarchar(20)")]
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public UserRole Role { get; set; } = UserRole.Customer;
 
         [Required]
-        public DateTime CreatedAt { get; set; }
-
-        [JsonIgnore]
-        public ICollection<Cart> Carts { get; set; } = new List<Cart>();
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Required]
         public bool IsActive { get; set; } = true;
 
-        // ✅ Thêm các thuộc tính 2FA
+        // 🧩 Ảnh đại diện người dùng
+        [StringLength(255)]
+        public string? AvatarUrl { get; set; }
+
+        // ===== Two-Factor Authentication =====
         public bool IsTwoFactorEnabled { get; set; } = false;
-        
+
         [StringLength(6)]
         public string? TwoFactorCode { get; set; }
-        
+
         public DateTime? TwoFactorCodeExpiry { get; set; }
+
+        // Số lần nhập sai 2FA
+        public int TwoFactorAttemptCount { get; set; } = 0;
+
+        // 🔗 Quan hệ
+        [JsonIgnore]
+        public ICollection<Cart> Carts { get; set; } = new List<Cart>();
     }
 
     public enum UserRole

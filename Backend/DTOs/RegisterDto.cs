@@ -19,5 +19,7 @@ namespace Backend.DTOs
         [Required(ErrorMessage = "Vui lòng nhập số điện thoại")]
         [RegularExpression(@"^0\d{9,10}$", ErrorMessage = "Số điện thoại phải bắt đầu bằng 0 và có 10-11 chữ số")]
         public string? PhoneNumber { get; set; }
+        [StringLength(255, ErrorMessage = "Địa chỉ tối đa 255 ký tự")]
+        public string? Address { get; set; }
     }
 }

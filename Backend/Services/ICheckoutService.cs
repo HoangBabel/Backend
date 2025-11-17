@@ -1,19 +1,18 @@
-﻿    using Backend.Data;
-    using Backend.DTOs;
+﻿using Backend.Data;
+using Backend.DTOs;
 using Backend.Helpers;
 using Backend.Models;
-    using Microsoft.EntityFrameworkCore;
-    using static Backend.Helpers.DateTimeHelper; // nếu bạn muốn dùng helper TZ VN
-    using static Backend.Helpers.VoucherCalculator;
-    using static Backend.Helpers.VoucherValidator;
+using Microsoft.EntityFrameworkCore;
+using static Backend.Helpers.DateTimeHelper;
+using static Backend.Helpers.VoucherCalculator;
+using static Backend.Helpers.VoucherValidator;
 
 namespace Backend.Services;
 
-    public interface ICheckoutService
-    {
-        Task<CheckoutOrderResponse> CheckoutOrderAsync(int userId, CheckoutOrderRequest req, CancellationToken ct);
-       
-    }
+public interface ICheckoutService
+{
+    Task<CheckoutOrderResponse> CheckoutOrderAsync(int userId, CheckoutOrderRequest req, CancellationToken ct);
+}
 
 public class CheckoutService : ICheckoutService
 {
@@ -22,7 +21,7 @@ public class CheckoutService : ICheckoutService
     private readonly IPayOSService _payOs;
     private readonly IEmailService _emailService;
 
-    public CheckoutService(AppDbContext context, IShippingService shippingService,  IPayOSService payOs, IEmailService emailService)
+    public CheckoutService(AppDbContext context, IShippingService shippingService, IPayOSService payOs, IEmailService emailService)
     {
         _context = context;
         _shippingService = shippingService;
@@ -30,8 +29,7 @@ public class CheckoutService : ICheckoutService
         _emailService = emailService;
     }
 
-    private static long ToVnd(decimal money)
-        => (long)decimal.Round(money, 0, MidpointRounding.AwayFromZero);
+    private static long ToVnd(decimal money) => (long)decimal.Round(money, 0, MidpointRounding.AwayFromZero);
 
     private static long NewOrderCode()
     {
@@ -40,12 +38,9 @@ public class CheckoutService : ICheckoutService
         return ts * 1000 + rnd; // tránh trùng khi gọi liên tục
     }
 
-    public async Task<CheckoutOrderResponse> CheckoutOrderAsync(
-        int userId,
-        CheckoutOrderRequest req,
-        CancellationToken ct)
+    public async Task<CheckoutOrderResponse> CheckoutOrderAsync(int userId, CheckoutOrderRequest req, CancellationToken ct)
     {
-        // 1) Lấy giỏ
+        // 1) Lấy giỏ hàng
         var cart = await _context.Carts
             .Include(c => c.Items)
             .ThenInclude(i => i.Product)
@@ -86,35 +81,27 @@ public class CheckoutService : ICheckoutService
 
         // 5) Voucher
         Vouncher? voucher = null;
-        decimal subtotalDiscount = 0m;
-        decimal shippingDiscount = 0m;
-        decimal totalDiscount = 0m;
-
+        decimal discount = 0m;
         if (!string.IsNullOrWhiteSpace(req.VoucherCode))
         {
             var code = req.VoucherCode.Trim();
             voucher = await _context.Vounchers.FirstOrDefaultAsync(v => v.Code == code, ct)
                       ?? throw new InvalidOperationException("Mã voucher không tồn tại.");
 
-            // ✅ Validate với error message chi tiết
-            if (!VoucherValidator.IsUsable(voucher, subtotal, out string errorMessage))
-                throw new InvalidOperationException(errorMessage);
+            if (!VoucherValidator.IsUsable(voucher, subtotal))
+                throw new InvalidOperationException("Voucher không còn hiệu lực hoặc không đạt điều kiện.");
 
-            // ✅ Tính discount cho cả subtotal và shipping
-            var discountResult = VoucherCalculator.CalcDiscount(voucher, subtotal, shippingFee);
-            subtotalDiscount = discountResult.SubtotalDiscount;
-            shippingDiscount = discountResult.ShippingDiscount;
-            totalDiscount = discountResult.TotalDiscount;
+            discount = VoucherCalculator.CalcDiscount(voucher, subtotal);
         }
 
         // 6) Tổng cuối
-        var finalAmount = subtotal + shippingFee - totalDiscount;
+        var finalAmount = subtotal + shippingFee - discount;
         if (finalAmount < 0) finalAmount = 0;
 
-        // 7) Lưu Order
         using var tx = await _context.Database.BeginTransactionAsync(ct);
         try
         {
+            // 7) Tạo order
             var order = new Order
             {
                 UserId = userId,
@@ -122,26 +109,22 @@ public class CheckoutService : ICheckoutService
                 ShippingAddress = req.ShippingAddress,
                 PaymentMethod = req.PaymentMethod,
                 Status = OrderStatus.Pending,
-
                 TotalAmount = subtotal,
                 ShippingFee = shippingFee,
-                DiscountAmount = totalDiscount,
+                DiscountAmount = discount,
                 FinalAmount = finalAmount,
-
                 ToProvinceId = req.ToProvinceId,
                 ToProvinceName = req.ToProvinceName,
                 ToDistrictId = req.ToDistrictId,
                 ToDistrictName = req.ToDistrictName,
                 ToWardCode = req.ToWardCode,
                 ToWardName = req.ToWardName,
-
                 ServiceId = shippingResult.ServiceId,
                 ServiceType = shippingResult.ServiceType,
                 Weight = totalWeight,
                 Length = req.Length ?? 20,
                 Width = req.Width ?? 20,
                 Height = req.Height ?? 20,
-
                 VoucherId = voucher?.Id,
                 Voucher = voucher,
                 VoucherCodeSnapshot = voucher?.Code
@@ -157,38 +140,46 @@ public class CheckoutService : ICheckoutService
                 });
             }
 
-            cart.IsCheckedOut = true;
-
             if (voucher != null)
             {
                 voucher.CurrentUsageCount += 1;
                 voucher.UsedAt = DateTime.UtcNow;
-                if (voucher.MaxUsageCount > 0 &&
-                    voucher.CurrentUsageCount >= voucher.MaxUsageCount)
-                {
+                if (voucher.MaxUsageCount > 0 && voucher.CurrentUsageCount >= voucher.MaxUsageCount)
                     voucher.IsValid = false;
-                }
             }
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync(ct);
 
-            // 8) Nếu QR → tạo/ghi Payment (KHÔNG return ở đây)
+            // 8) Xử lý Payment nếu QR
+            string? checkoutUrl = null;
+            string? qrCode = null;
+            string? paymentLinkId = null;
+
             if (req.PaymentMethod == PaymentMethod.QR && finalAmount > 0m)
             {
-                // Idempotent: nếu đã có Payment 'Created' → tái dùng
                 var existing = await _context.Payments
                     .Where(p => p.Type == PaymentType.Order && p.RefId == order.Id && p.Status == PaymentStatus.Created)
                     .OrderByDescending(p => p.Id)
                     .FirstOrDefaultAsync(ct);
 
-                if (existing == null)
+                PayOSCreatePaymentResult pay;
+
+                if (existing != null)
+                {
+                    // Reuse Payment cũ
+                    pay = new PayOSCreatePaymentResult
+                    {
+                        PaymentLinkId = existing.PaymentLinkId,
+                        CheckoutUrl = existing.RawPayload,
+                        QrCode = existing.QrCode
+                    };
+                }
+                else
                 {
                     var orderCode = NewOrderCode();
                     var amountVnd = ToVnd(finalAmount);
                     var desc = $"ORDER-{order.Id}";
-
-                    PayOSCreatePaymentResult pay;
 
                     try
                     {
@@ -196,7 +187,7 @@ public class CheckoutService : ICheckoutService
                     }
                     catch (InvalidOperationException ex) when (ex.Message.Contains("code=231"))
                     {
-                        // trùng orderCode → sinh mới và thử lại 1 lần
+                        // retry 1 lần nếu trùng code
                         orderCode = NewOrderCode();
                         pay = await _payOs.CreatePaymentAsync(orderCode, amountVnd, desc, ct);
                     }
@@ -211,45 +202,59 @@ public class CheckoutService : ICheckoutService
                         ExpectedAmount = amountVnd,
                         Status = PaymentStatus.Created,
                         CreatedAt = DateTime.UtcNow,
-                        RawPayload = pay.CheckoutUrl
+                        RawPayload = pay.CheckoutUrl,
+                        QrCode = pay.QrCode
                     });
 
                     await _context.SaveChangesAsync(ct);
                 }
+
+                checkoutUrl = pay.CheckoutUrl;
+                qrCode = pay.QrCode;
+                paymentLinkId = pay.PaymentLinkId;
+
+                // ✅ Sau khi Payment link thành công → đánh dấu cart
+                cart.IsCheckedOut = true;
+                await _context.SaveChangesAsync(ct);
+            }
+            else
+            {
+                // COD → đánh dấu cart ngay
+                cart.IsCheckedOut = true;
+                await _context.SaveChangesAsync(ct);
             }
 
             await tx.CommitAsync(ct);
 
-            // ✅ 9) GỬI EMAIL XÁC NHẬN ĐƠN HÀNG (background task)
-            var orderId = order.Id;
+            // 9) Gửi email xác nhận (background)
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await _emailService.SendOrderConfirmationEmailAsync(orderId, CancellationToken.None);
+                    await _emailService.SendOrderConfirmationEmailAsync(order.Id, CancellationToken.None);
                 }
                 catch (Exception ex)
                 {
-                    // Log lỗi nhưng không throw để không ảnh hưởng đến checkout
-                    Console.WriteLine($"❌ Failed to send order confirmation email for order {orderId}: {ex.Message}");
-                    // Có thể log vào database hoặc file log nếu cần
+                    Console.WriteLine($"❌ Failed to send order confirmation email for order {order.Id}: {ex.Message}");
                 }
             }, CancellationToken.None);
-            // 10) RETURN MỘT LẦN Ở CUỐI HÀM
+
+            // 10) Return dữ liệu cho FE
             return new CheckoutOrderResponse
             {
                 Message = "Đặt hàng thành công.",
                 OrderId = order.Id,
                 Subtotal = subtotal,
                 ShippingFee = shippingFee,
-                SubtotalDiscount = subtotalDiscount,      // ✅ THÊM
-                ShippingDiscount = shippingDiscount,      // ✅ THÊM
-                Discount = totalDiscount,
+                Discount = discount,
                 FinalAmount = finalAmount,
                 PaymentMethod = req.PaymentMethod,
                 VoucherCode = voucher?.Code,
                 ServiceType = shippingResult.ServiceType,
-                Weight = totalWeight
+                Weight = totalWeight,
+                CheckoutUrl = checkoutUrl,
+                QrCode = qrCode,
+                PaymentLinkId = paymentLinkId
             };
         }
         catch
@@ -259,8 +264,3 @@ public class CheckoutService : ICheckoutService
         }
     }
 }
-
-
-
-
-

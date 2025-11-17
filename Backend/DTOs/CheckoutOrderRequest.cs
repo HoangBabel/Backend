@@ -47,17 +47,19 @@ namespace Backend.DTOs
         public int OrderId { get; set; }
         public decimal Subtotal { get; set; }
         public decimal ShippingFee { get; set; }
-
-        // ✅ Chi tiết discount
-        public decimal SubtotalDiscount { get; set; }
-        public decimal ShippingDiscount { get; set; }
-        public decimal Discount { get; set; }  // Tổng
+        public decimal Discount { get; set; }
         public decimal FinalAmount { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
         public string? VoucherCode { get; set; }
-        public string? ServiceType {  get; set; }
+        public string? ServiceType { get; set; }
         public int? Weight { get; set; }
+
+        // ✅ Thêm các trường cho FE lấy Payment/QR
+        public string? CheckoutUrl { get; set; }
+        public string? QrCode { get; set; }
+        public string? PaymentLinkId { get; set; }
     }
+
 
 
 }

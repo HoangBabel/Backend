@@ -7,13 +7,15 @@ namespace Backend.Models
 {
     public class Order
     {
-        [Key] public int Id { get; set; }
+        [Key]
+        public int Id { get; set; }
 
         [Required, ForeignKey("User")]
         public int UserId { get; set; }
         public User User { get; set; } = null!;
 
-        [Required] public DateTime OrderDate { get; set; } = DateTime.Now;
+        [Required]
+        public DateTime OrderDate { get; set; } = DateTime.Now;
 
         // Tổng tiền hàng (chưa giảm, chưa phí ship)
         [Column(TypeName = "decimal(18,2)")]
@@ -42,16 +44,12 @@ namespace Backend.Models
         [Required, StringLength(255)]
         public string? ShippingAddress { get; set; }
 
-        // ===== THÊM CÁC TRƯỜNG MỚI CHO SHIPPING =====
-
-        // Thông tin địa chỉ chi tiết để tính phí ship
+        // ===== SHIPPING INFO =====
         public int? ToProvinceId { get; set; }
-
         [StringLength(100)]
         public string? ToProvinceName { get; set; }
 
         public int? ToDistrictId { get; set; }
-
         [StringLength(100)]
         public string? ToDistrictName { get; set; }
 
@@ -61,33 +59,49 @@ namespace Backend.Models
         [StringLength(100)]
         public string? ToWardName { get; set; }
 
-        // Thông tin giao hàng
-        public int? ServiceId { get; set; } = 53321; // Mặc định: GHN Tiết Kiệm
-
+        public int? ServiceId { get; set; } = 53321; // GHN Tiết Kiệm mặc định
         [StringLength(50)]
         public string? ServiceType { get; set; }
 
-        // Thông tin kích thước/trọng lượng
-        public int? Weight { get; set; } // gram
-        public int? Length { get; set; } // cm
-        public int? Width { get; set; }  // cm
-        public int? Height { get; set; } // cm
+        public int? Weight { get; set; }
+        public int? Length { get; set; }
+        public int? Width { get; set; }
+        public int? Height { get; set; }
 
-        // Gắn voucher (nullable, để order không bắt buộc có voucher)
+        // ===== VOUCHER =====
         public int? VoucherId { get; set; }
         public Vouncher? Voucher { get; set; }
 
-        // Lưu ảnh chụp mã voucher lúc đặt (phòng khi giá trị voucher đổi về sau)
         [StringLength(50)]
         public string? VoucherCodeSnapshot { get; set; }
 
+        // ===== PAYOS INTEGRATION =====
+        [StringLength(100)]
+        public string? PaymentLinkId { get; set; }
+
+        [StringLength(500)]
+        public string? PaymentUrl { get; set; }
+
+        [StringLength(500)]
+        public string? QrCodeUrl { get; set; }
+
+        [StringLength(50)]
+        public string? TransactionCode { get; set; }
+
+        [StringLength(100)]
+        public string? PaymentStatus { get; set; } = "UNPAID"; // PAID | FAILED | PENDING | UNPAID
+
+        public DateTime? PaidAt { get; set; } // thời điểm thanh toán thành công
+
+        // ===== ITEMS =====
         public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
     }
+
     public enum OrderStatus
     {
-        Pending,     // Đang chờ xử lý
-        Processing,  // Đang xử lý
-        Completed,   // Hoàn tất
-        Cancelled    // Hủy
+        Pending,
+        Processing,
+        Completed,
+        Cancelled
     }
 }

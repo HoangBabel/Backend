@@ -51,16 +51,13 @@ namespace Backend.Services
             if (rental.Status != RentalStatus.Pending)
                 throw new InvalidOperationException("Chỉ có thể thanh toán đơn thuê đang ở trạng thái Pending.");
 
-            // Tính lại tiền
             rental.RecalculateTotal();
             rental.SnapshotDepositFromItems();
 
             var subtotal = rental.TotalPrice;
             var deposit = rental.DepositPaid;
 
-            // ===== BỔ SUNG SHIPPING =====
-
-            // 1) Tính khối lượng (fallback 200g/sp)
+            // ===== SHIPPING =====
             int totalWeight = req.Weight ?? 0;
             if (totalWeight == 0)
             {
@@ -68,7 +65,6 @@ namespace Backend.Services
                 totalWeight = Math.Clamp(totalItems * 200, 200, 30000);
             }
 
-            // 2) Tính phí ship
             var shippingRequest = new ShippingFeeRequest
             {
                 ToDistrictId = req.ToDistrictId,
@@ -87,7 +83,7 @@ namespace Backend.Services
 
             decimal shippingFee = shippingResult.ShippingFee;
 
-            // 3) Áp dụng voucher
+            // ===== VOUCHER =====
             Vouncher? voucher = null;
             decimal subtotalDiscount = 0m;
             decimal shippingDiscount = 0m;
@@ -99,21 +95,19 @@ namespace Backend.Services
                 voucher = await _context.Vounchers.FirstOrDefaultAsync(v => v.Code == code, ct)
                           ?? throw new InvalidOperationException("Mã voucher không tồn tại.");
 
-                // ✅ Validate với error message chi tiết
                 if (!VoucherValidator.IsUsable(voucher, subtotal, out string errorMessage))
                     throw new InvalidOperationException(errorMessage);
 
-                // ✅ Tính discount cho cả subtotal và shipping
                 var discountResult = VoucherCalculator.CalcDiscount(voucher, subtotal, shippingFee);
                 subtotalDiscount = discountResult.SubtotalDiscount;
                 shippingDiscount = discountResult.ShippingDiscount;
                 totalDiscount = discountResult.TotalDiscount;
             }
-            // 4) Tổng cuối cùng
+
             var finalAmt = subtotal + deposit + shippingFee - totalDiscount;
             if (finalAmt < 0) finalAmt = 0;
 
-            // 5) Cập nhật thông tin shipping vào rental
+            // ===== UPDATE RENTAL =====
             rental.ShippingAddress = req.ShippingAddress;
             rental.ToProvinceId = req.ToProvinceId;
             rental.ToProvinceName = req.ToProvinceName;
@@ -129,7 +123,7 @@ namespace Backend.Services
             rental.Width = req.Width ?? 20;
             rental.Height = req.Height ?? 20;
 
-            // 6) Cập nhật voucher
+            // ===== UPDATE VOUCHER =====
             if (voucher != null)
             {
                 rental.VoucherId = voucher.Id;
@@ -147,16 +141,14 @@ namespace Backend.Services
 
             await _context.SaveChangesAsync(ct);
 
-            // ===== KẾT THÚC SHIPPING =====
-
             var result = new CheckoutRentalResponse
             {
                 RentalId = rental.Id,
                 Subtotal = subtotal,
                 Deposit = deposit,
                 ShippingFee = shippingFee,
-                SubtotalDiscount = subtotalDiscount,      // ✅ THÊM
-                ShippingDiscount = shippingDiscount,      // ✅ THÊM
+                SubtotalDiscount = subtotalDiscount,
+                ShippingDiscount = shippingDiscount,
                 Discount = totalDiscount,
                 FinalAmount = finalAmt,
                 PaymentMethod = req.PaymentMethod,
@@ -165,13 +157,13 @@ namespace Backend.Services
                 Weight = totalWeight
             };
 
-            // Nếu không phải QR hoặc tiền = 0 thì khỏi tạo link
+            // ===== PAYOS =====
             if (req.PaymentMethod != PaymentMethod.QR || finalAmt <= 0m)
                 return result;
 
             var amountVnd = ToVnd(finalAmt);
 
-            // Idempotent: nếu đã có Payment "Created" cho rental này thì tái sử dụng
+            // Reuse if exists
             var existing = await _context.Payments
                 .Where(p => p.Type == PaymentType.Rental && p.RefId == rental.Id)
                 .OrderByDescending(p => p.Id)
@@ -185,15 +177,22 @@ namespace Backend.Services
                 return result;
             }
 
-            // Tạo link mới
-            var desc = $"RENTAL-{rental.Id}";
-            var pay = await _payOs.CreatePaymentWithNewCodeAsync(amountVnd, desc, ct);
-            var orderCodeUsed = pay.OrderCodeUsed;
+            // New PayOS order code
+            long orderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            string desc = $"RENTAL-{rental.Id}";
+
+            var pay = await _payOs.CreatePaymentAsync(
+                orderCode,
+                amountVnd,
+                desc,
+                ct,
+                returnUrl: null
+            );
 
             _context.Payments.Add(new Payment
             {
-                PaymentLinkId = pay.PaymentLinkId!,
-                OrderCode = orderCodeUsed,
+                OrderCode = orderCode,
+                PaymentLinkId = pay.PaymentLinkId,
                 Description = desc,
                 Type = PaymentType.Rental,
                 RefId = rental.Id,
@@ -201,8 +200,9 @@ namespace Backend.Services
                 Status = PaymentStatus.Created,
                 CreatedAt = DateTime.UtcNow,
                 RawPayload = pay.CheckoutUrl,
-                QrCode = pay.QrCode,
+                QrCode = pay.QrCode
             });
+
             await _context.SaveChangesAsync(ct);
 
             result.CheckoutUrl = pay.CheckoutUrl;

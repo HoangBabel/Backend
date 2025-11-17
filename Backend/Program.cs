@@ -41,10 +41,11 @@ builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 builder.Services.AddScoped<IShippingService, ShippingService>();
 builder.Services.AddScoped<IDailyRentalService, DailyRentalService>();
 // options
-builder.Services.Configure<PayOSOptions>(builder.Configuration.GetSection("PayOS"));
+// Program.cs
+builder.Services.Configure<Backend.Models.PayOSOptions>(builder.Configuration.GetSection("PayOS"));
 
 // Dùng HttpClient vì service có gọi API PayOS
-builder.Services.AddHttpClient<IPayOSService, PayOSService>();
+builder.Services.AddHttpClient<Backend.Services.IPayOSService, Backend.Services.PayOSService>();
 // Thêm vào Program.cs
 builder.Services.AddScoped<IEmailService, EmailService>();
 

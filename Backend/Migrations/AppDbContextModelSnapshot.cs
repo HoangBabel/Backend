@@ -102,27 +102,27 @@ namespace Backend.Migrations
                         new
                         {
                             CategoryId = 1,
-                            Name = "Tivi"
+                            Name = "Nấu ăn và chế biến thực phẩm"
                         },
                         new
                         {
                             CategoryId = 2,
-                            Name = "Tủ lạnh"
+                            Name = "Làm mát và giữ lạnh"
                         },
                         new
                         {
                             CategoryId = 3,
-                            Name = "Máy giặt"
+                            Name = "Giặt giũ và vệ sinh"
                         },
                         new
                         {
                             CategoryId = 4,
-                            Name = "Máy lạnh"
+                            Name = "Giải trí"
                         },
                         new
                         {
                             CategoryId = 5,
-                            Name = "Gia dụng nhà bếp"
+                            Name = "Chăm sóc cá nhân"
                         });
                 });
 
@@ -149,9 +149,28 @@ namespace Backend.Migrations
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentLinkId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("PaymentStatus")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PaymentUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("QrCodeUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<int?>("ServiceId")
                         .HasColumnType("int");
@@ -196,6 +215,10 @@ namespace Backend.Migrations
 
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TransactionCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
@@ -370,12 +393,13 @@ namespace Backend.Migrations
                             IdProduct = 1,
                             CategoryId = 1,
                             Condition = 0,
-                            Description = "Smart Tivi 4K hiển thị sắc nét, hỗ trợ điều khiển bằng giọng nói.",
+                            Description = "Nấu cơm nhanh, giữ ấm lâu, dễ vệ sinh.",
+                            Image = "/images/giadung1.jpg",
                             IsDeleted = false,
                             IsRental = false,
-                            Name = "Tivi Samsung Crystal UHD 55 inch BU8000",
-                            Price = 12990000m,
-                            Quantity = 12,
+                            Name = "Nồi cơm điện Cuckoo CR-0675F",
+                            Price = 1590000m,
+                            Quantity = 18,
                             Status = "ConHang"
                         },
                         new
@@ -383,33 +407,64 @@ namespace Backend.Migrations
                             IdProduct = 2,
                             CategoryId = 1,
                             Condition = 0,
-                            Description = "Màn hình OLED siêu mỏng, hỗ trợ Dolby Vision và Dolby Atmos.",
+                            Description = "Công nghệ Rapid Air giảm 90% dầu mỡ.",
+                            Image = "/images/giadung2.jpg",
                             IsDeleted = false,
                             IsRental = false,
-                            Name = "Tivi LG OLED evo 48 inch C3",
-                            Price = 27990000m,
-                            Quantity = 5,
+                            Name = "Nồi chiên không dầu Philips HD9200/90",
+                            Price = 2290000m,
+                            Quantity = 15,
                             Status = "ConHang"
                         },
                         new
                         {
                             IdProduct = 3,
-                            CategoryId = 2,
+                            CategoryId = 1,
                             Condition = 0,
-                            Description = "Công nghệ tiết kiệm điện Inverter, ngăn đông mềm Prime Fresh+.",
+                            Description = "Hâm, nấu, rã đông nhanh, núm xoay cơ học.",
+                            Image = "/images/giadung3.jpg",
                             IsDeleted = false,
                             IsRental = false,
-                            Name = "Tủ lạnh Panasonic Inverter 322 lít NR-BV361BPKV",
-                            Price = 12490000m,
-                            Quantity = 8,
+                            Name = "Lò vi sóng Sharp R-G226VN-BK",
+                            Price = 1990000m,
+                            Quantity = 14,
                             Status = "ConHang"
                         },
                         new
                         {
                             IdProduct = 4,
+                            CategoryId = 1,
+                            Condition = 0,
+                            Description = "Công suất 700W, lưỡi dao thép không gỉ.",
+                            Image = "/images/giadung4.jpg",
+                            IsDeleted = false,
+                            IsRental = false,
+                            Name = "Máy xay sinh tố Philips HR2221/00",
+                            Price = 1250000m,
+                            Quantity = 12,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 5,
+                            CategoryId = 1,
+                            Condition = 0,
+                            Description = "Pha espresso chất lượng, thiết kế nhỏ gọn.",
+                            Image = "/images/giadung5.jpg",
+                            IsDeleted = false,
+                            IsRental = false,
+                            Name = "Máy pha cà phê Delonghi EC685",
+                            Price = 3990000m,
+                            Quantity = 10,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 6,
                             CategoryId = 2,
                             Condition = 0,
-                            Description = "Làm lạnh nhanh, khử mùi bằng than hoạt tính, thiết kế sang trọng.",
+                            Description = "Làm lạnh nhanh, khử mùi than hoạt tính.",
+                            Image = "/images/lammat1.jpg",
                             IsDeleted = false,
                             IsRental = false,
                             Name = "Tủ lạnh Samsung Inverter 424 lít RT42CG6324B1SV",
@@ -419,10 +474,67 @@ namespace Backend.Migrations
                         },
                         new
                         {
-                            IdProduct = 5,
+                            IdProduct = 7,
+                            CategoryId = 2,
+                            Condition = 0,
+                            Description = "Bảo quản thực phẩm lâu dài, tiết kiệm điện.",
+                            Image = "/images/lammat2.jpg",
+                            IsDeleted = false,
+                            IsRental = false,
+                            Name = "Tủ đông Electrolux 200 lít EFZ2200H-H",
+                            Price = 8990000m,
+                            Quantity = 8,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 8,
+                            CategoryId = 2,
+                            Condition = 0,
+                            Description = "Làm mát nhanh, lọc bụi, 3 chế độ gió.",
+                            Image = "/images/lammat3.jpg",
+                            IsDeleted = false,
+                            IsRental = false,
+                            Name = "Quạt điều hòa Midea AC120-19AR",
+                            Price = 3290000m,
+                            Quantity = 12,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 9,
+                            CategoryId = 2,
+                            Condition = 0,
+                            Description = "Khử khuẩn, tiết kiệm điện vượt trội.",
+                            Image = "/images/lammat4.jpg",
+                            IsDeleted = false,
+                            IsRental = false,
+                            Name = "Máy điều hòa Daikin Inverter 1.5 HP FTKY35WMVMV",
+                            Price = 11490000m,
+                            Quantity = 9,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 10,
+                            CategoryId = 2,
+                            Condition = 0,
+                            Description = "Tiện dụng, vận hành êm, thiết kế nhỏ gọn.",
+                            Image = "/images/lammat5.jpg",
+                            IsDeleted = false,
+                            IsRental = false,
+                            Name = "Quạt điện Asia F16001",
+                            Price = 550000m,
+                            Quantity = 20,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 11,
                             CategoryId = 3,
                             Condition = 0,
-                            Description = "Công nghệ UltraMix hòa tan bột giặt, giảm phai màu quần áo.",
+                            Description = "Công nghệ UltraMix hòa tan bột giặt.",
+                            Image = "/images/giatgiu1.jpg",
                             IsDeleted = false,
                             IsRental = false,
                             Name = "Máy giặt Electrolux Inverter 10kg EWF1024BDWA",
@@ -432,197 +544,198 @@ namespace Backend.Migrations
                         },
                         new
                         {
-                            IdProduct = 6,
+                            IdProduct = 12,
                             CategoryId = 3,
                             Condition = 0,
-                            Description = "AI Control tự động tối ưu chương trình giặt, tiết kiệm năng lượng.",
+                            Description = "Rửa sạch, tiết kiệm nước, vận hành êm ái.",
+                            Image = "/images/giatgiu2.jpg",
                             IsDeleted = false,
                             IsRental = false,
-                            Name = "Máy giặt Samsung Inverter 9.5kg WW95T504DAW/SV",
-                            Price = 8790000m,
+                            Name = "Máy rửa chén Bosch SMS25CI00E",
+                            Price = 12990000m,
                             Quantity = 6,
                             Status = "ConHang"
                         },
                         new
                         {
-                            IdProduct = 7,
-                            CategoryId = 4,
-                            Condition = 0,
-                            Description = "Công nghệ Streamer khử khuẩn, tiết kiệm điện vượt trội.",
-                            IsDeleted = false,
-                            IsRental = false,
-                            Name = "Máy lạnh Daikin Inverter 1.5 HP FTKY35WMVMV",
-                            Price = 11490000m,
-                            Quantity = 9,
-                            Status = "ConHang"
-                        },
-                        new
-                        {
-                            IdProduct = 8,
-                            CategoryId = 4,
-                            Condition = 0,
-                            Description = "Làm lạnh nhanh, kháng khuẩn bằng ion bạc, vận hành êm ái.",
-                            IsDeleted = false,
-                            IsRental = false,
-                            Name = "Máy lạnh LG Inverter 1 HP V10WIN",
-                            Price = 8390000m,
-                            Quantity = 11,
-                            Status = "ConHang"
-                        },
-                        new
-                        {
-                            IdProduct = 9,
-                            CategoryId = 5,
-                            Condition = 0,
-                            Description = "Công nghệ Rapid Air giảm 90% dầu mỡ, vỏ thép sơn tĩnh điện.",
-                            IsDeleted = false,
-                            IsRental = false,
-                            Name = "Nồi chiên không dầu Philips HD9200/90 4.1L",
-                            Price = 2290000m,
-                            Quantity = 15,
-                            Status = "ConHang"
-                        },
-                        new
-                        {
-                            IdProduct = 10,
-                            CategoryId = 5,
-                            Condition = 0,
-                            Description = "Chức năng hâm, nấu, rã đông nhanh, điều khiển núm xoay cơ học.",
-                            IsDeleted = false,
-                            IsRental = false,
-                            Name = "Lò vi sóng Sharp R-G226VN-BK 20 lít",
-                            Price = 1990000m,
-                            Quantity = 14,
-                            Status = "ConHang"
-                        },
-                        new
-                        {
-                            IdProduct = 11,
-                            CategoryId = 1,
-                            Condition = 1,
-                            Description = "Smart Tivi Full HD 43 inch cho thuê theo tháng, phù hợp sự kiện, văn phòng.",
-                            IsDeleted = false,
-                            IsRental = true,
-                            Name = "Tivi Samsung 43 inch (Cho thuê)",
-                            Price = 500000m,
-                            Quantity = 20,
-                            Status = "ConHang"
-                        },
-                        new
-                        {
-                            IdProduct = 12,
-                            CategoryId = 1,
-                            Condition = 1,
-                            Description = "Smart Tivi 4K 55 inch cho thuê, hỗ trợ lắp đặt tận nơi.",
-                            IsDeleted = false,
-                            IsRental = true,
-                            Name = "Tivi LG 55 inch 4K (Cho thuê)",
-                            Price = 800000m,
-                            Quantity = 15,
-                            Status = "ConHang"
-                        },
-                        new
-                        {
                             IdProduct = 13,
-                            CategoryId = 2,
-                            Condition = 1,
-                            Description = "Tủ lạnh mini cho thuê theo tháng, phù hợp phòng trọ, sinh viên.",
+                            CategoryId = 3,
+                            Condition = 0,
+                            Description = "Hút bụi tự động, lập bản đồ thông minh.",
+                            Image = "/images/giatgiu3.jpg",
                             IsDeleted = false,
-                            IsRental = true,
-                            Name = "Tủ lạnh 180 lít (Cho thuê)",
-                            Price = 400000m,
-                            Quantity = 25,
+                            IsRental = false,
+                            Name = "Robot hút bụi Xiaomi Mi Robot Vacuum",
+                            Price = 4990000m,
+                            Quantity = 15,
                             Status = "ConHang"
                         },
                         new
                         {
                             IdProduct = 14,
-                            CategoryId = 2,
-                            Condition = 1,
-                            Description = "Tủ lạnh Inverter tiết kiệm điện cho thuê, bảo hành trong thời gian thuê.",
+                            CategoryId = 3,
+                            Condition = 0,
+                            Description = "Loại bỏ bụi mịn, vi khuẩn và mùi hôi.",
+                            Image = "/images/giatgiu4.jpg",
                             IsDeleted = false,
-                            IsRental = true,
-                            Name = "Tủ lạnh Inverter 350 lít (Cho thuê)",
-                            Price = 700000m,
-                            Quantity = 12,
+                            IsRental = false,
+                            Name = "Máy lọc không khí Sharp FP-J40E-B",
+                            Price = 3990000m,
+                            Quantity = 8,
                             Status = "ConHang"
                         },
                         new
                         {
                             IdProduct = 15,
                             CategoryId = 3,
-                            Condition = 1,
-                            Description = "Máy giặt cửa trên 8kg cho thuê, phù hợp gia đình nhỏ.",
+                            Condition = 0,
+                            Description = "Sấy nhanh, tiết kiệm điện, bảo vệ vải.",
+                            Image = "/images/giatgiu5.jpg",
                             IsDeleted = false,
-                            IsRental = true,
-                            Name = "Máy giặt 8kg (Cho thuê)",
-                            Price = 450000m,
-                            Quantity = 18,
+                            IsRental = false,
+                            Name = "Máy sấy quần áo Electrolux EDV705HQWA",
+                            Price = 5990000m,
+                            Quantity = 9,
                             Status = "ConHang"
                         },
                         new
                         {
                             IdProduct = 16,
-                            CategoryId = 3,
-                            Condition = 1,
-                            Description = "Máy giặt Inverter tiết kiệm điện, vận hành êm ái cho thuê theo tháng.",
+                            CategoryId = 4,
+                            Condition = 0,
+                            Description = "Smart Tivi 4K sắc nét, hỗ trợ giọng nói.",
+                            Image = "/images/giai_tri1.jpg",
                             IsDeleted = false,
-                            IsRental = true,
-                            Name = "Máy giặt Inverter 9kg (Cho thuê)",
-                            Price = 600000m,
-                            Quantity = 10,
+                            IsRental = false,
+                            Name = "Tivi Samsung Crystal UHD 55 inch BU8000",
+                            Price = 12990000m,
+                            Quantity = 12,
                             Status = "ConHang"
                         },
                         new
                         {
                             IdProduct = 17,
                             CategoryId = 4,
-                            Condition = 1,
-                            Description = "Máy lạnh 1 HP cho thuê theo tháng, bảo trì miễn phí.",
+                            Condition = 0,
+                            Description = "Âm thanh mạnh mẽ, pin 20 giờ.",
+                            Image = "/images/giai_tri2.jpg",
                             IsDeleted = false,
-                            IsRental = true,
-                            Name = "Máy lạnh 1 HP (Cho thuê)",
-                            Price = 550000m,
-                            Quantity = 30,
+                            IsRental = false,
+                            Name = "Loa Bluetooth JBL Charge 5",
+                            Price = 2590000m,
+                            Quantity = 15,
                             Status = "ConHang"
                         },
                         new
                         {
                             IdProduct = 18,
                             CategoryId = 4,
-                            Condition = 1,
-                            Description = "Máy lạnh Inverter tiết kiệm điện, làm lạnh nhanh cho thuê.",
+                            Condition = 0,
+                            Description = "Màn hình 4K sắc nét, hệ điều hành webOS, hỗ trợ điều khiển giọng nói.",
+                            Image = "/images/giai_tri3.jpg",
                             IsDeleted = false,
-                            IsRental = true,
-                            Name = "Máy lạnh Inverter 1.5 HP (Cho thuê)",
-                            Price = 750000m,
-                            Quantity = 22,
+                            IsRental = false,
+                            Name = "Tivi LG 4K Smart TV 55 inch UQ7550",
+                            Price = 11990000m,
+                            Quantity = 10,
                             Status = "ConHang"
                         },
                         new
                         {
                             IdProduct = 19,
-                            CategoryId = 5,
-                            Condition = 1,
-                            Description = "Lò vi sóng cho thuê theo tháng, phù hợp văn phòng, phòng trọ.",
+                            CategoryId = 4,
+                            Condition = 0,
+                            Description = "Chiếu phim Full HD, pin tích hợp.",
+                            Image = "/images/giai_tri4.jpg",
                             IsDeleted = false,
-                            IsRental = true,
-                            Name = "Lò vi sóng 20L (Cho thuê)",
-                            Price = 200000m,
-                            Quantity = 25,
+                            IsRental = false,
+                            Name = "Máy chiếu mini ViewSonic M1",
+                            Price = 6990000m,
+                            Quantity = 7,
                             Status = "ConHang"
                         },
                         new
                         {
                             IdProduct = 20,
-                            CategoryId = 5,
-                            Condition = 1,
-                            Description = "Nồi chiên không dầu dung tích lớn cho thuê, phù hợp gia đình.",
+                            CategoryId = 4,
+                            Condition = 0,
+                            Description = "Âm thanh vòm 3D sống động.",
+                            Image = "/images/giai_tri5.jpg",
                             IsDeleted = false,
-                            IsRental = true,
-                            Name = "Nồi chiên không dầu 5L (Cho thuê)",
-                            Price = 25000m,
-                            Quantity = 20,
+                            IsRental = false,
+                            Name = "Loa Soundbar LG SN6Y",
+                            Price = 3990000m,
+                            Quantity = 9,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 21,
+                            CategoryId = 5,
+                            Condition = 0,
+                            Description = "Cạo êm, bảo vệ da, pin 50 phút.",
+                            Image = "/images/chamsoc1.jpg",
+                            IsDeleted = false,
+                            IsRental = false,
+                            Name = "Máy cạo râu Philips Series 5000",
+                            Price = 1599000m,
+                            Quantity = 10,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 22,
+                            CategoryId = 5,
+                            Condition = 0,
+                            Description = "Sấy nhanh, nhiệt độ ổn định, bảo vệ tóc.",
+                            Image = "/images/chamsoc2.jpg",
+                            IsDeleted = false,
+                            IsRental = false,
+                            Name = "Máy sấy tóc Panasonic EH-NA65",
+                            Price = 1299000m,
+                            Quantity = 12,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 23,
+                            CategoryId = 5,
+                            Condition = 0,
+                            Description = "Thiết bị massage đa năng giúp thư giãn cơ bắp, giảm mệt mỏi và hỗ trợ lưu thông máu, phù hợp sử dụng tại nhà sau ngày làm việc căng thẳng.",
+                            Image = "/images/chamsoc3.jpg",
+                            IsDeleted = false,
+                            IsRental = false,
+                            Name = "Máy Massage Cầm Tay Beurer MG21",
+                            Price = 1299000m,
+                            Quantity = 15,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 24,
+                            CategoryId = 5,
+                            Condition = 0,
+                            Description = "Làm sạch sâu, chống lão hóa, pin lâu dài.",
+                            Image = "/images/chamsoc4.jpg",
+                            IsDeleted = false,
+                            IsRental = false,
+                            Name = "Máy rửa mặt Foreo Luna Mini 3",
+                            Price = 2499000m,
+                            Quantity = 8,
+                            Status = "ConHang"
+                        },
+                        new
+                        {
+                            IdProduct = 25,
+                            CategoryId = 5,
+                            Condition = 0,
+                            Description = "Cạo nhanh, an toàn, dễ vệ sinh.",
+                            Image = "/images/chamsoc5.jpg",
+                            IsDeleted = false,
+                            IsRental = false,
+                            Name = "Máy cắt tóc Philips HC3505",
+                            Price = 899000m,
+                            Quantity = 10,
                             Status = "ConHang"
                         });
                 });
@@ -859,6 +972,14 @@ namespace Backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -891,6 +1012,9 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<int>("TwoFactorAttemptCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("TwoFactorCode")
                         .HasMaxLength(6)
                         .HasColumnType("nvarchar(6)");
@@ -910,15 +1034,31 @@ namespace Backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = 10,
+                            Id = 1,
+                            AvatarUrl = "https://localhost:44303/uploads/avatars/d580bd4e-3fce-4964-9e0c-53177f34082c.png",
+                            CreatedAt = new DateTime(2025, 11, 11, 22, 27, 39, 707, DateTimeKind.Local).AddTicks(2879),
+                            Email = "hoangphap1000@gmail.com",
+                            FullName = "Lê Hoàng Pháp",
+                            IsActive = true,
+                            IsTwoFactorEnabled = false,
+                            PasswordHash = "$2a$11$5WvpePUu2EIg8jo7MBWjvee3/uwro4V6QUIRSAju3HSEJVmvwcXJe",
+                            PhoneNumber = "0564090866",
+                            Role = "Admin",
+                            TwoFactorAttemptCount = 0,
+                            Username = "admin"
+                        },
+                        new
+                        {
+                            Id = 2,
                             CreatedAt = new DateTime(2025, 10, 16, 10, 32, 39, 924, DateTimeKind.Local).AddTicks(5745),
                             Email = "giang@example.com",
-                            FullName = "le giang",
+                            FullName = "Le Giang",
                             IsActive = true,
                             IsTwoFactorEnabled = false,
                             PasswordHash = "$2a$11$zB0cPctNLMkRJqNbC7qc7eF.VvtXVr1KmCuGUEoXC331zdp4Q9J.a",
                             PhoneNumber = "0773678161",
                             Role = "Admin",
+                            TwoFactorAttemptCount = 0,
                             Username = "giang"
                         });
                 });

@@ -1,14 +1,10 @@
 ﻿using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using Backend.Data;
 using Backend.DTOs;
 using Backend.Models;
 using Backend.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 
 namespace Backend.Controllers;
 
@@ -27,13 +23,11 @@ public class CheckoutController : ControllerBase
         _context = context;
     }
 
-
-    // Controllers/CheckoutController.cs
     [HttpPost("order")]
     public async Task<IActionResult> CheckoutOrder(
-     [FromBody] CheckoutOrderRequest? req,
-     [FromQuery] int? devUserId,
-     CancellationToken ct)
+        [FromBody] CheckoutOrderRequest? req,
+        [FromQuery] int? devUserId,
+        CancellationToken ct)
     {
         if (req is null)
             return BadRequest("Body JSON rỗng hoặc sai Content-Type: application/json.");
@@ -49,21 +43,82 @@ public class CheckoutController : ControllerBase
 
         try
         {
+            // 1️⃣ Tạo Order bằng CheckoutService
             var res = await _service.CheckoutOrderAsync(userId, req, ct);
 
-            // Lấy URL từ bảng Payments nếu là QR
             string? checkoutUrl = null;
             string? qrCode = null;
+            string? paymentLinkId = null;
 
-            if (res.PaymentMethod == PaymentMethod.QR)
+            // 2️⃣ Nếu PaymentMethod là QR → tạo Payment link
+            if (res.PaymentMethod == PaymentMethod.QR && res.FinalAmount > 0)
             {
-                var payment = await _context.Payments
-                    .Where(p => p.Type == PaymentType.Order && p.RefId == res.OrderId)
-                    .OrderByDescending(p => p.Id)
-                    .FirstOrDefaultAsync(ct);
+                var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == res.OrderId, ct);
+                if (order is not null)
+                {
+                    // ✅ Kiểm tra Payment đã tồn tại chưa
+                    var existingPayment = await _context.Payments
+                        .Where(p => p.Type == PaymentType.Order && p.RefId == order.Id && p.Status == PaymentStatus.Created)
+                        .OrderByDescending(p => p.Id)
+                        .FirstOrDefaultAsync(ct);
 
-                checkoutUrl = payment?.RawPayload;
-                qrCode = payment?.QrCode;
+                    PayOSCreatePaymentResult pay;
+
+                    if (existingPayment != null)
+                    {
+                        // Reuse Payment cũ
+                        pay = new PayOSCreatePaymentResult
+                        {
+                            PaymentLinkId = existingPayment.PaymentLinkId,
+                            CheckoutUrl = existingPayment.RawPayload,
+                            QrCode = existingPayment.QrCode
+                        };
+                    }
+                    else
+                    {
+                        // Tạo mới Payment
+                        var amountVnd = (long)decimal.Round(order.FinalAmount, 0, MidpointRounding.AwayFromZero);
+                        var description = $"Đơn hàng #{order.Id} - {order.User?.Email ?? "Khách hàng"}";
+
+                        pay = await _payOs.CreatePaymentAsync(
+                            order.Id,
+                            amountVnd,
+                            description,
+                            ct,
+                            returnUrl: $"https://yourfrontend.com/payment-result?orderId={order.Id}"
+                        );
+
+                        _context.Payments.Add(new Payment
+                        {
+                            PaymentLinkId = pay.PaymentLinkId,
+                            OrderCode = order.Id,
+                            Description = description,
+                            Type = PaymentType.Order,
+                            RefId = order.Id,
+                            ExpectedAmount = amountVnd,
+                            Status = PaymentStatus.Created,
+                            CreatedAt = DateTime.UtcNow,
+                            RawPayload = pay.CheckoutUrl,
+                            QrCode = pay.QrCode
+                        });
+
+                        await _context.SaveChangesAsync(ct);
+                    }
+
+                    // ✅ Lưu thông tin Payment vào Order
+                    order.PaymentMethod = DTOs.PaymentMethod.QR;
+                    order.PaymentStatus = "PENDING";
+                    order.PaymentLinkId = pay.PaymentLinkId;
+                    order.PaymentUrl = pay.CheckoutUrl;
+                    order.QrCodeUrl = pay.QrCode;
+                    order.TransactionCode = pay.TransactionCode ?? Guid.NewGuid().ToString("N");
+
+                    await _context.SaveChangesAsync(ct);
+
+                    checkoutUrl = order.PaymentUrl;
+                    qrCode = order.QrCodeUrl;
+                    paymentLinkId = order.PaymentLinkId;
+                }
             }
 
             return Ok(new
@@ -79,7 +134,8 @@ public class CheckoutController : ControllerBase
                 res.ServiceType,
                 res.Weight,
                 CheckoutUrl = checkoutUrl,
-                QrCode = qrCode
+                QrCode = qrCode,
+                PaymentLinkId = paymentLinkId
             });
         }
         catch (InvalidOperationException ex)
@@ -91,5 +147,4 @@ public class CheckoutController : ControllerBase
             return StatusCode(500, new { error = "Lỗi khi checkout đơn hàng.", detail = ex.Message });
         }
     }
-
 }

@@ -22,21 +22,57 @@ namespace Backend.Controllers
             _emailService = emailService;
         }
 
-        // GET: api/Order/User/5
-        [HttpGet("User/{userId}")]
-        public async Task<IActionResult> GetOrdersByUser(int userId)
+        // GET: api/Order
+        [HttpGet]
+        public async Task<IActionResult> GetAllOrders([FromQuery] OrderStatus? status = null)
         {
+            var query = _context.Orders
+                .Include(o => o.User)
+                .Include(o => o.Items).ThenInclude(i => i.Product)
+                .Include(o => o.Voucher)
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (status.HasValue)
+            {
+                query = query.Where(o => o.Status == status.Value);
+            }
+
+            var orders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
+            return Ok(orders);
+        }
+
+
+        // GET: api/Order/User
+        // Lấy đơn hàng của user hiện tại dựa trên token
+        [HttpGet("User")]
+        public async Task<IActionResult> GetOrdersByCurrentUser()
+        {
+            // Lấy userId từ Claims
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized(new { Message = "Token không hợp lệ hoặc chưa đăng nhập" });
+            }
+
+            if (!int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return BadRequest(new { Message = "UserId không hợp lệ" });
+            }
+
             var orders = await _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.Items).ThenInclude(i => i.Product)
                 .Where(o => o.UserId == userId)
+                .OrderByDescending(o => o.OrderDate)
                 .AsNoTracking()
                 .ToListAsync();
 
             return Ok(orders);
         }
 
-        // PUT: api/Order/Payment/5
+        // Các endpoint khác giữ nguyên
+        // PUT: api/Order/Payment/{orderId}
         [HttpPut("Payment/{orderId}")]
         public async Task<IActionResult> MarkAsPaid(int orderId)
         {
@@ -44,14 +80,10 @@ namespace Backend.Controllers
             if (order == null)
                 return NotFound(new { Message = "Không tìm thấy đơn hàng" });
 
-            // Lưu trạng thái cũ để kiểm tra
             var oldStatus = order.Status;
-
-            // Cập nhật trạng thái
             order.Status = OrderStatus.Completed;
             await _context.SaveChangesAsync();
 
-            // Gửi email thông báo (background task để không làm chậm response)
             if (oldStatus != OrderStatus.Completed)
             {
                 _ = Task.Run(async () =>
@@ -62,17 +94,15 @@ namespace Backend.Controllers
                     }
                     catch (Exception ex)
                     {
-                        // Log lỗi nhưng không throw để không ảnh hưởng đến API response
                         Console.WriteLine($"Failed to send payment confirmation email for order {orderId}: {ex.Message}");
                     }
-                }, CancellationToken.None);
+                });
             }
 
             return Ok(new { Message = "Thanh toán thành công! Email xác nhận đã được gửi." });
         }
 
-        // PUT: api/Order/Status/5
-    
+        // PUT: api/Order/Status/{orderId}
         [HttpPut("Status/{orderId}")]
         public async Task<IActionResult> UpdateOrderStatus(int orderId, [FromBody] UpdateOrderStatusRequest request)
         {
@@ -81,32 +111,25 @@ namespace Backend.Controllers
                 return NotFound(new { Message = "Không tìm thấy đơn hàng" });
 
             var oldStatus = order.Status;
-
-            // Validate: Không cho cập nhật nếu đã Completed
             if (oldStatus == OrderStatus.Completed && request.Status != OrderStatus.Completed)
                 return BadRequest(new { Message = "Không thể thay đổi trạng thái đơn hàng đã hoàn thành" });
 
             order.Status = request.Status;
             await _context.SaveChangesAsync();
 
-            // ✅ GỬI EMAIL KHI TRẠNG THÁI THAY ĐỔI
             if (oldStatus != request.Status)
             {
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        await _emailService.SendOrderStatusUpdateEmailAsync(
-                            orderId,
-                            request.Status,
-                            CancellationToken.None
-                        );
+                        await _emailService.SendOrderStatusUpdateEmailAsync(orderId, request.Status, CancellationToken.None);
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"❌ Failed to send status update email for order {orderId}: {ex.Message}");
+                        Console.WriteLine($"Failed to send status update email for order {orderId}: {ex.Message}");
                     }
-                }, CancellationToken.None);
+                });
             }
 
             return Ok(new
@@ -117,7 +140,7 @@ namespace Backend.Controllers
             });
         }
 
-        // GET: api/Order/5
+        // GET: api/Order/{orderId}
         [HttpGet("{orderId}")]
         public async Task<IActionResult> GetOrderById(int orderId)
         {
@@ -134,61 +157,6 @@ namespace Backend.Controllers
             return Ok(order);
         }
 
-        // GET: api/Order
-        [HttpGet]
-        public async Task<IActionResult> GetAllOrders([FromQuery] OrderStatus? status = null)
-        {
-            var query = _context.Orders
-                .Include(o => o.User)
-                .Include(o => o.Items).ThenInclude(i => i.Product)
-                .AsNoTracking();
-
-            if (status.HasValue)
-            {
-                query = query.Where(o => o.Status == status.Value);
-            }
-
-            var orders = await query
-                .OrderByDescending(o => o.OrderDate)
-                .ToListAsync();
-
-            return Ok(orders);
-        }
-
-        // DELETE: api/Order/5
-        [HttpDelete("{orderId}")]
-        public async Task<IActionResult> CancelOrder(int orderId)
-        {
-            var order = await _context.Orders.FindAsync(orderId);
-            if (order == null)
-                return NotFound(new { Message = "Không tìm thấy đơn hàng" });
-
-            if (order.Status == OrderStatus.Completed)
-                return BadRequest(new { Message = "Không thể hủy đơn hàng đã hoàn thành" });
-
-            var oldStatus = order.Status;
-            order.Status = OrderStatus.Cancelled;
-            await _context.SaveChangesAsync();
-
-            // Gửi email thông báo hủy đơn
-            if (oldStatus != OrderStatus.Cancelled)
-            {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await _emailService.SendOrderStatusUpdateEmailAsync(orderId, OrderStatus.Cancelled, CancellationToken.None);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Failed to send cancellation email for order {orderId}: {ex.Message}");
-                    }
-                }, CancellationToken.None);
-            }
-
-            return Ok(new { Message = "Đơn hàng đã được hủy" });
-        }
-
         private static string GetStatusText(OrderStatus status) => status switch
         {
             OrderStatus.Pending => "Đang chờ xử lý",
@@ -199,7 +167,6 @@ namespace Backend.Controllers
         };
     }
 
-    // DTO cho request cập nhật trạng thái
     public class UpdateOrderStatusRequest
     {
         public OrderStatus Status { get; set; }
