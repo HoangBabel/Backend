@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Backend.Models;
+using Backend.Models.Backend.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Data
@@ -20,6 +21,8 @@ namespace Backend.Data
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<Rental> Rentals { get; set; }
         public DbSet<RentalItem> RentalItems { get; set; }
+        public DbSet<Review> Reviews { get; set; }
+
         public DbSet<RentalPlan> RentalPlans => Set<RentalPlan>();
         public DbSet<Payment> Payments { get; set; } = null!;
         public DbSet<RentalPricingTier> RentalPricingTiers => Set<RentalPricingTier>();
@@ -72,6 +75,32 @@ namespace Backend.Data
                 .IsUnique()
                 .HasFilter("[IsCheckedOut] = 0")
                 .HasDatabaseName("IX_Carts_UserId_NotCheckedOut");
+            modelBuilder.Entity<Review>()
+              .HasOne(r => r.User)
+              .WithMany(u => u.Reviews)
+              .HasForeignKey(r => r.UserId)
+              .OnDelete(DeleteBehavior.Restrict); // Không xóa review khi xóa user
+
+            // Cấu hình quan hệ Product - Review
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.Product)
+                .WithMany(p => p.Reviews)
+                .HasForeignKey(r => r.ProductId)
+                .OnDelete(DeleteBehavior.Cascade); // Xóa review khi xóa product
+
+            // Cấu hình self-referencing cho Reply
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.ParentReview)
+                .WithMany(r => r.Replies)
+                .HasForeignKey(r => r.ParentReviewId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Index để tối ưu query
+            modelBuilder.Entity<Review>()
+                .HasIndex(r => r.ProductId);
+
+            modelBuilder.Entity<Review>()
+                .HasIndex(r => r.UserId);
             // ===== CẤU HÌNH THUÊ THEO NGÀY =====
 
             // 🔹 RentalPlan: (ProductId, Unit) duy nhất

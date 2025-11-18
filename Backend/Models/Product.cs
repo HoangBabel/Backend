@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using Backend.Models.Backend.Models;
 
 namespace Backend.Models
 {
@@ -41,6 +42,15 @@ namespace Backend.Models
         // Liên kết
         [JsonIgnore] // tránh vòng lặp khi trả Product, và tránh client post Category lồng
         public Category? Category { get; set; }
+        [JsonIgnore]
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
+
+        // 📊 Thống kê đánh giá
+        [NotMapped]
+        public double AverageRating => Reviews.Any() ? Reviews.Average(r => r.Rating) : 0;
+
+        [NotMapped]
+        public int TotalReviews => Reviews.Count;
 
     }
     public enum ProductStatus

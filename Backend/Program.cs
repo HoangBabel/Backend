@@ -36,6 +36,7 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<IRentalCheckoutService, RentalCheckoutService>();
+builder.Services.AddScoped<IAntiSpamService, AntiSpamService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 builder.Services.AddScoped<IShippingService, ShippingService>();

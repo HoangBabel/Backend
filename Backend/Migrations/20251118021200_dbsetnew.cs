@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class New_DB_Seed : Migration
+    public partial class dbsetnew : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -291,6 +291,46 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Reviews",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    ProductId = table.Column<int>(type: "int", nullable: false),
+                    Rating = table.Column<int>(type: "int", nullable: false),
+                    Comment = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsApproved = table.Column<bool>(type: "bit", nullable: false),
+                    ImageUrls = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    LikeCount = table.Column<int>(type: "int", nullable: false),
+                    ParentReviewId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Reviews", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Reviews_Products_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Products",
+                        principalColumn: "IdProduct",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Reviews_Reviews_ParentReviewId",
+                        column: x => x.ParentReviewId,
+                        principalTable: "Reviews",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Reviews_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "CartItems",
                 columns: table => new
                 {
@@ -413,7 +453,7 @@ namespace Backend.Migrations
                     { 6, true, "FREESHIP", 0, null, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 500, null, 1000000m, null, "shipping", null },
                     { 7, true, "SHIP50", 0, null, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 300, null, 500000m, 50m, "shipping", null },
                     { 8, false, "COMBO200K", 0, null, 200000m, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 150, null, 3000000m, null, "fixed", null },
-                    { 9, false, "THUE100K", 0, null, 100000m, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 200, null, 1000000m, null, "fixed", null },
+                    { 9, false, "THUE100K", 0, null, 100000m, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 200, null, 100000m, null, "fixed", null },
                     { 10, false, "THUE15", 0, 15m, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 100, 300000m, 2000000m, null, "percent", null },
                     { 11, false, "EXPIRED", 0, null, 500000m, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), true, 10, null, 1000000m, null, "fixed", null },
                     { 12, false, "SOLDOUT", 5, 25m, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 5, 1000000m, 3000000m, null, "percent", null },
@@ -448,8 +488,8 @@ namespace Backend.Migrations
                     { 21, 5, 0, null, null, "Cạo êm, bảo vệ da, pin 50 phút.", "/images/chamsoc1.jpg", false, false, "Máy cạo râu Philips Series 5000", 1599000m, 10, "ConHang", null, null },
                     { 22, 5, 0, null, null, "Sấy nhanh, nhiệt độ ổn định, bảo vệ tóc.", "/images/chamsoc2.jpg", false, false, "Máy sấy tóc Panasonic EH-NA65", 1299000m, 12, "ConHang", null, null },
                     { 23, 5, 0, null, null, "Thiết bị massage đa năng giúp thư giãn cơ bắp, giảm mệt mỏi và hỗ trợ lưu thông máu, phù hợp sử dụng tại nhà sau ngày làm việc căng thẳng.", "/images/chamsoc3.jpg", false, false, "Máy Massage Cầm Tay Beurer MG21", 1299000m, 15, "ConHang", null, null },
-                    { 24, 5, 0, null, null, "Làm sạch sâu, chống lão hóa, pin lâu dài.", "/images/chamsoc4.jpg", false, false, "Máy rửa mặt Foreo Luna Mini 3", 2499000m, 8, "ConHang", null, null },
-                    { 25, 5, 0, null, null, "Cạo nhanh, an toàn, dễ vệ sinh.", "/images/chamsoc5.jpg", false, false, "Máy cắt tóc Philips HC3505", 899000m, 10, "ConHang", null, null }
+                    { 24, 5, 0, null, null, "Làm sạch sâu, chống lão hóa, pin lâu dài.", "/images/chamsoc4.jpg", false, true, "Máy rửa mặt Foreo Luna Mini 3", 2499000m, 8, "ConHang", null, null },
+                    { 25, 5, 0, null, null, "Cạo nhanh, an toàn, dễ vệ sinh.", "/images/chamsoc5.jpg", false, true, "Máy cắt tóc Philips HC3505", 899000m, 10, "ConHang", null, null }
                 });
 
             migrationBuilder.CreateIndex(
@@ -532,6 +572,21 @@ namespace Backend.Migrations
                 name: "IX_Rentals_VoucherId",
                 table: "Rentals",
                 column: "VoucherId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reviews_ParentReviewId",
+                table: "Reviews",
+                column: "ParentReviewId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reviews_ProductId",
+                table: "Reviews",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reviews_UserId",
+                table: "Reviews",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -556,25 +611,28 @@ namespace Backend.Migrations
                 name: "RentalPricingTiers");
 
             migrationBuilder.DropTable(
+                name: "Reviews");
+
+            migrationBuilder.DropTable(
                 name: "Carts");
 
             migrationBuilder.DropTable(
                 name: "Orders");
 
             migrationBuilder.DropTable(
-                name: "Products");
-
-            migrationBuilder.DropTable(
                 name: "Rentals");
 
             migrationBuilder.DropTable(
-                name: "Categories");
+                name: "Products");
 
             migrationBuilder.DropTable(
                 name: "Users");
 
             migrationBuilder.DropTable(
                 name: "Vounchers");
+
+            migrationBuilder.DropTable(
+                name: "Categories");
         }
     }
 }

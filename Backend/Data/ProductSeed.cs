@@ -80,8 +80,8 @@ namespace Backend.Data
                  new Product { IdProduct = 21, CategoryId = 5, Name = "Máy cạo râu Philips Series 5000", Price = 1599000m, Quantity = 10, Description = "Cạo êm, bảo vệ da, pin 50 phút.", Image = "/images/chamsoc1.jpg", Status = ProductStatus.ConHang, IsDeleted = false, IsRental = false, Condition = ProductCondition.New },
                  new Product { IdProduct = 22, CategoryId = 5, Name = "Máy sấy tóc Panasonic EH-NA65", Price = 1299000m, Quantity = 12, Description = "Sấy nhanh, nhiệt độ ổn định, bảo vệ tóc.", Image = "/images/chamsoc2.jpg", Status = ProductStatus.ConHang, IsDeleted = false, IsRental = false, Condition = ProductCondition.New },
                  new Product { IdProduct = 23, CategoryId = 5, Name = "Máy Massage Cầm Tay Beurer MG21", Price = 1299000m, Quantity = 15, Description = "Thiết bị massage đa năng giúp thư giãn cơ bắp, giảm mệt mỏi và hỗ trợ lưu thông máu, phù hợp sử dụng tại nhà sau ngày làm việc căng thẳng.", Image = "/images/chamsoc3.jpg", Status = ProductStatus.ConHang, IsDeleted = false, IsRental = false, Condition = ProductCondition.New },
-                 new Product { IdProduct = 24, CategoryId = 5, Name = "Máy rửa mặt Foreo Luna Mini 3", Price = 2499000m, Quantity = 8, Description = "Làm sạch sâu, chống lão hóa, pin lâu dài.", Image = "/images/chamsoc4.jpg", Status = ProductStatus.ConHang, IsDeleted = false, IsRental = false, Condition = ProductCondition.New },
-                 new Product { IdProduct = 25, CategoryId = 5, Name = "Máy cắt tóc Philips HC3505", Price = 899000m, Quantity = 10, Description = "Cạo nhanh, an toàn, dễ vệ sinh.", Image = "/images/chamsoc5.jpg", Status = ProductStatus.ConHang, IsDeleted = false, IsRental = false, Condition = ProductCondition.New }
+                 new Product { IdProduct = 24, CategoryId = 5, Name = "Máy rửa mặt Foreo Luna Mini 3", Price = 2499000m, Quantity = 8, Description = "Làm sạch sâu, chống lão hóa, pin lâu dài.", Image = "/images/chamsoc4.jpg", Status = ProductStatus.ConHang, IsDeleted = false, IsRental = true, Condition = ProductCondition.New },
+                 new Product { IdProduct = 25, CategoryId = 5, Name = "Máy cắt tóc Philips HC3505", Price = 899000m, Quantity = 10, Description = "Cạo nhanh, an toàn, dễ vệ sinh.", Image = "/images/chamsoc5.jpg", Status = ProductStatus.ConHang, IsDeleted = false, IsRental = true, Condition = ProductCondition.New }
                  );
 
             modelBuilder.Entity<Vouncher>().HasData(
@@ -260,7 +260,7 @@ namespace Backend.Data
                     DiscountValue = 100000m,
                     DiscountPercent = null,
                     MaximumDiscount = null,
-                    MinimumOrderValue = 1000000m,
+                    MinimumOrderValue = 100000m,
                     ApplyToShipping = false,
                     ShippingDiscountPercent = null,
                     ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅

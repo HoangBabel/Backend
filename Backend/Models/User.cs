@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using Backend.Models.Backend.Models;
 
 namespace Backend.Models
 {
@@ -63,6 +64,10 @@ namespace Backend.Models
         // 🔗 Quan hệ
         [JsonIgnore]
         public ICollection<Cart> Carts { get; set; } = new List<Cart>();
+
+        [JsonIgnore]
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
+
     }
 
     public enum UserRole

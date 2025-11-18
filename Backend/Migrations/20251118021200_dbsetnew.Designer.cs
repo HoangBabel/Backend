@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251117070912_New_DB_Seed")]
-    partial class New_DB_Seed
+    [Migration("20251118021200_dbsetnew")]
+    partial class dbsetnew
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,58 @@ namespace Backend.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Backend.Models.Backend.Models.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrls")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LikeCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ParentReviewId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentReviewId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Reviews");
+                });
 
             modelBuilder.Entity("Backend.Models.Cart", b =>
                 {
@@ -721,7 +773,7 @@ namespace Backend.Migrations
                             Description = "Làm sạch sâu, chống lão hóa, pin lâu dài.",
                             Image = "/images/chamsoc4.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Máy rửa mặt Foreo Luna Mini 3",
                             Price = 2499000m,
                             Quantity = 8,
@@ -735,7 +787,7 @@ namespace Backend.Migrations
                             Description = "Cạo nhanh, an toàn, dễ vệ sinh.",
                             Image = "/images/chamsoc5.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Máy cắt tóc Philips HC3505",
                             Price = 899000m,
                             Quantity = 10,
@@ -1247,7 +1299,7 @@ namespace Backend.Migrations
                             ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
                             IsValid = true,
                             MaxUsageCount = 200,
-                            MinimumOrderValue = 1000000m,
+                            MinimumOrderValue = 100000m,
                             Type = "fixed"
                         },
                         new
@@ -1291,6 +1343,32 @@ namespace Backend.Migrations
                             MinimumOrderValue = 3000000m,
                             Type = "percent"
                         });
+                });
+
+            modelBuilder.Entity("Backend.Models.Backend.Models.Review", b =>
+                {
+                    b.HasOne("Backend.Models.Backend.Models.Review", "ParentReview")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentReviewId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Backend.Models.Product", "Product")
+                        .WithMany("Reviews")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.User", "User")
+                        .WithMany("Reviews")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ParentReview");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Backend.Models.Cart", b =>
@@ -1406,6 +1484,11 @@ namespace Backend.Migrations
                     b.Navigation("Rental");
                 });
 
+            modelBuilder.Entity("Backend.Models.Backend.Models.Review", b =>
+                {
+                    b.Navigation("Replies");
+                });
+
             modelBuilder.Entity("Backend.Models.Cart", b =>
                 {
                     b.Navigation("Items");
@@ -1424,6 +1507,8 @@ namespace Backend.Migrations
             modelBuilder.Entity("Backend.Models.Product", b =>
                 {
                     b.Navigation("CartItems");
+
+                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("Backend.Models.Rental", b =>
@@ -1434,6 +1519,8 @@ namespace Backend.Migrations
             modelBuilder.Entity("Backend.Models.User", b =>
                 {
                     b.Navigation("Carts");
+
+                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("Backend.Models.Vouncher", b =>
