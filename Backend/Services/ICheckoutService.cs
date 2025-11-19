@@ -85,13 +85,17 @@ public class CheckoutService : ICheckoutService
         if (!string.IsNullOrWhiteSpace(req.VoucherCode))
         {
             var code = req.VoucherCode.Trim();
-            voucher = await _context.Vounchers.FirstOrDefaultAsync(v => v.Code == code, ct)
-                      ?? throw new InvalidOperationException("Mã voucher không tồn tại.");
+            voucher = await _context.Vounchers.FirstOrDefaultAsync(v => v.Code == code, ct);
+
+            if (voucher == null)
+                throw new InvalidOperationException("Mã voucher không tồn tại.");
 
             if (!VoucherValidator.IsUsable(voucher, subtotal))
                 throw new InvalidOperationException("Voucher không còn hiệu lực hoặc không đạt điều kiện.");
 
-            discount = VoucherCalculator.CalcDiscount(voucher, subtotal);
+            // ✅ Lấy DiscountAmount từ result
+            var result = VoucherCalculator.Calculate(voucher, subtotal, shippingFee);
+            discount = result.TotalDiscount;//phải lấy tổng mới đúng
         }
 
         // 6) Tổng cuối

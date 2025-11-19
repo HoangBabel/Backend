@@ -277,7 +277,7 @@ namespace Backend.Data
                     DiscountValue = null,
                     DiscountPercent = 15m,
                     MaximumDiscount = 300000m,
-                    MinimumOrderValue = 2000000m,
+                    MinimumOrderValue = 200000m,
                     ApplyToShipping = false,
                     ShippingDiscountPercent = null,
                     ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, DateTimeKind.Utc), // ✅
