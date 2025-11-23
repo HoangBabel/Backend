@@ -28,7 +28,24 @@ namespace Backend.Models
 
         [ StringLength(255)]
         public string? ShippingAddress { get; set; }
+        // ===== THÔNG TIN THANH TOÁN =====
+        [StringLength(100)]
+        public string? PaymentLinkId { get; set; }
 
+        [StringLength(500)]
+        public string? PaymentUrl { get; set; }
+
+        [StringLength(500)]
+        public string? QrCodeUrl { get; set; }
+
+        [StringLength(50)]
+        public string? TransactionCode { get; set; }
+
+        [StringLength(100)]
+        public string? PaymentStatus { get; set; } = "UNPAID"; // PAID | FAILED | PENDING | UNPAID
+
+        public DateTime? PaidAt { get; set; }
+        public DateTime? ConfirmedAt { get; set; }
         // ===== THÊM CÁC TRƯỜNG MỚI CHO SHIPPING =====
 
         // Thông tin địa chỉ chi tiết để tính phí ship
@@ -158,6 +175,7 @@ namespace Backend.Models
         Pending,     // Đang chờ xác nhận
         Active,      // Đang thuê
         Completed,   // Đã trả
-        Cancelled    // Đã hủy
+        Cancelled,    // Đã hủy
+        Confirmed
     }
 }

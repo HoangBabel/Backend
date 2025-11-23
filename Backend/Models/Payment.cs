@@ -12,6 +12,8 @@
         public string? QrCode { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? LastEventAt { get; set; }
+        public DateTime? PaidAt { get; set; }          // ✅ THÊM
+        public DateTime? UpdatedAt { get; set; }
         public string? RawPayload { get; set; }      // tận dụng lưu CheckoutUrl
         public string? Description { get; set; }     // "RENTAL", "ORDER" (tuỳ bạn)
     }
@@ -23,10 +25,10 @@
 
     public enum PaymentStatus
     {
-        Created = 1,
-        Paid = 2,
-        Failed = 3,
-        Cancelled = 4
+        Created = 0,
+        Paid = 1,
+        Cancelled = 2,
+        Failed = 3
     }
 
 }
