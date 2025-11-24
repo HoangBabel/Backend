@@ -47,6 +47,8 @@ namespace Backend.Services
             string? returnUrl = null)
         {
             var finalReturnUrl = returnUrl ?? _opt.ReturnUrl;
+            var expiredAt = (int)DateTimeOffset.UtcNow.AddMinutes(10).ToUnixTimeSeconds();
+
 
             var dict = new SortedDictionary<string, string>(StringComparer.Ordinal)
             {
@@ -67,6 +69,7 @@ namespace Backend.Services
                 description,
                 returnUrl = finalReturnUrl,
                 cancelUrl = _opt.CancelUrl,
+                expiredAt,
                 signature
             };
 
