@@ -30,7 +30,9 @@ namespace Backend.Models
         [Required(ErrorMessage = "Vui lòng nhập số điện thoại")]
         [RegularExpression(@"^0\d{9,10}$", ErrorMessage = "Số điện thoại phải bắt đầu bằng 0 và có 10-11 chữ số")]
         public string PhoneNumber { get; set; } = null!;
-
+        // ✅ THÊM CÁC TRƯỜNG MỚI CHO RESET PASSWORD
+        public string? ResetPasswordCode { get; set; }
+        public DateTime? ResetPasswordCodeExpiry { get; set; }
         // 🏠 Địa chỉ người dùng
         [StringLength(255, ErrorMessage = "Địa chỉ tối đa 255 ký tự")]
         public string? Address { get; set; }

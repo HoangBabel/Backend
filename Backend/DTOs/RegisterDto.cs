@@ -10,7 +10,10 @@ namespace Backend.DTOs
         [Required, EmailAddress, StringLength(100)]
         public string Email { get; set; } = null!;
 
-        [Required, StringLength(100, MinimumLength = 6)]
+        [RegularExpression(
+            @"^(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>/?]).{6,20}$",
+            ErrorMessage = "Mật khẩu phải từ 6-20 ký tự, chứa ít nhất 1 chữ số và 1 ký tự đặc biệt"
+        )]
         public string Password { get; set; } = null!;
 
         [Required, StringLength(100)]

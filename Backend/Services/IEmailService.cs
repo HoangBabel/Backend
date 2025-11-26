@@ -11,6 +11,8 @@ namespace Backend.Services
     public interface IEmailService
     {
         Task SendEmailAsync(string toEmail, string subject, string body);
+        Task SendResetPasswordCodeAsync(string toEmail, string code, string fullName);
+
         Task Send2FACodeAsync(string toEmail, string code, string userName);
         Task SendOrderConfirmationEmailAsync(int orderId, CancellationToken ct = default);
         Task SendOrderStatusUpdateEmailAsync(int orderId, OrderStatus newStatus, CancellationToken ct = default);
@@ -61,7 +63,54 @@ public class EmailService : IEmailService
 
         await client.SendMailAsync(mailMessage);
     }
+    public async Task SendResetPasswordCodeAsync(string toEmail, string code, string fullName)
+    {
+        var subject = "Mã xác thực đặt lại mật khẩu";
+        var body = $@"
+                <html>
+                <body style='font-family: Arial, sans-serif;'>
+                    <div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>
+                        <h2 style='color: #FF5722; text-align: center;'>🔐 ĐẶT LẠI MẬT KHẨU</h2>
+                        <hr style='border: 1px solid #eee;'>
+                        
+                        <p style='font-size: 16px;'>Xin chào <strong>{fullName}</strong>,</p>
+                        
+                        <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+                        
+                        <p>Mã xác thực của bạn là:</p>
+                        
+                        <div style='text-align: center; margin: 30px 0;'>
+                            <div style='display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px 40px; border-radius: 10px;'>
+                                <h1 style='color: white; margin: 0; letter-spacing: 8px; font-size: 32px;'>{code}</h1>
+                            </div>
+                        </div>
+                        
+                        <div style='background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;'>
+                            <p style='margin: 0; color: #856404;'>
+                                <strong>⚠️ Lưu ý:</strong> Mã này có hiệu lực trong <strong>10 phút</strong>.
+                            </p>
+                        </div>
+                        
+                        <p style='color: #666;'>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng:</p>
+                        <ul style='color: #666;'>
+                            <li>Bỏ qua email này</li>
+                            <li>Kiểm tra bảo mật tài khoản của bạn</li>
+                            <li>Thay đổi mật khẩu ngay lập tức nếu nghi ngờ tài khoản bị xâm nhập</li>
+                        </ul>
+                        
+                        <hr style='border: 1px solid #eee; margin-top: 30px;'>
+                        
+                        <p style='color: #999; font-size: 12px; text-align: center;'>
+                            Email này được gửi tự động từ hệ thống. Vui lòng không trả lời email này.<br>
+                            © 2024 Your Company. All rights reserved.
+                        </p>
+                    </div>
+                </body>
+                </html>
+            ";
 
+        await SendEmailAsync(toEmail, subject, body);
+    }
     public async Task Send2FACodeAsync(string toEmail, string code, string userName)
     {
         var subject = "Mã xác thực đăng nhập - 2FA";

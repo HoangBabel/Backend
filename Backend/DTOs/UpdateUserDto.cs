@@ -5,10 +5,13 @@ namespace Backend.DTOs
 {
     public class UpdateUserDto
     {
-        [Required, EmailAddress]
+        [Required(ErrorMessage = "Email không được để trống")]
+        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
+        [StringLength(100, ErrorMessage = "Email tối đa 100 ký tự")]
         public string Email { get; set; } = null!;
 
-        [Required, StringLength(100)]
+        [Required(ErrorMessage = "Họ tên không được để trống")]
+        [StringLength(100, MinimumLength = 2, ErrorMessage = "Họ tên phải từ 2-100 ký tự")]
         public string FullName { get; set; } = null!;
 
         [RegularExpression(@"^0\d{9,10}$", ErrorMessage = "Số điện thoại phải bắt đầu bằng 0 và có 10-11 chữ số")]
