@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251118021200_dbsetnew")]
-    partial class dbsetnew
+    [Migration("20251205145124_DB_Init")]
+    partial class DB_Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -157,7 +157,7 @@ namespace Backend.Migrations
                         new
                         {
                             CategoryId = 1,
-                            Name = "Nấu ăn và chế biến thực phẩm"
+                            Name = "Chế biến thực phẩm"
                         },
                         new
                         {
@@ -352,6 +352,9 @@ namespace Backend.Migrations
                     b.Property<long>("OrderCode")
                         .HasColumnType("bigint");
 
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("PaymentLinkId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -371,6 +374,9 @@ namespace Backend.Migrations
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -451,7 +457,7 @@ namespace Backend.Migrations
                             Description = "Nấu cơm nhanh, giữ ấm lâu, dễ vệ sinh.",
                             Image = "/images/giadung1.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Nồi cơm điện Cuckoo CR-0675F",
                             Price = 1590000m,
                             Quantity = 18,
@@ -479,7 +485,7 @@ namespace Backend.Migrations
                             Description = "Hâm, nấu, rã đông nhanh, núm xoay cơ học.",
                             Image = "/images/giadung3.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Lò vi sóng Sharp R-G226VN-BK",
                             Price = 1990000m,
                             Quantity = 14,
@@ -507,7 +513,7 @@ namespace Backend.Migrations
                             Description = "Pha espresso chất lượng, thiết kế nhỏ gọn.",
                             Image = "/images/giadung5.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Máy pha cà phê Delonghi EC685",
                             Price = 3990000m,
                             Quantity = 10,
@@ -535,7 +541,7 @@ namespace Backend.Migrations
                             Description = "Bảo quản thực phẩm lâu dài, tiết kiệm điện.",
                             Image = "/images/lammat2.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Tủ đông Electrolux 200 lít EFZ2200H-H",
                             Price = 8990000m,
                             Quantity = 8,
@@ -563,7 +569,7 @@ namespace Backend.Migrations
                             Description = "Khử khuẩn, tiết kiệm điện vượt trội.",
                             Image = "/images/lammat4.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Máy điều hòa Daikin Inverter 1.5 HP FTKY35WMVMV",
                             Price = 11490000m,
                             Quantity = 9,
@@ -591,7 +597,7 @@ namespace Backend.Migrations
                             Description = "Công nghệ UltraMix hòa tan bột giặt.",
                             Image = "/images/giatgiu1.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Máy giặt Electrolux Inverter 10kg EWF1024BDWA",
                             Price = 8990000m,
                             Quantity = 10,
@@ -619,7 +625,7 @@ namespace Backend.Migrations
                             Description = "Hút bụi tự động, lập bản đồ thông minh.",
                             Image = "/images/giatgiu3.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Robot hút bụi Xiaomi Mi Robot Vacuum",
                             Price = 4990000m,
                             Quantity = 15,
@@ -647,7 +653,7 @@ namespace Backend.Migrations
                             Description = "Sấy nhanh, tiết kiệm điện, bảo vệ vải.",
                             Image = "/images/giatgiu5.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Máy sấy quần áo Electrolux EDV705HQWA",
                             Price = 5990000m,
                             Quantity = 9,
@@ -675,7 +681,7 @@ namespace Backend.Migrations
                             Description = "Âm thanh mạnh mẽ, pin 20 giờ.",
                             Image = "/images/giai_tri2.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Loa Bluetooth JBL Charge 5",
                             Price = 2590000m,
                             Quantity = 15,
@@ -703,7 +709,7 @@ namespace Backend.Migrations
                             Description = "Chiếu phim Full HD, pin tích hợp.",
                             Image = "/images/giai_tri4.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Máy chiếu mini ViewSonic M1",
                             Price = 6990000m,
                             Quantity = 7,
@@ -731,7 +737,7 @@ namespace Backend.Migrations
                             Description = "Cạo êm, bảo vệ da, pin 50 phút.",
                             Image = "/images/chamsoc1.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Máy cạo râu Philips Series 5000",
                             Price = 1599000m,
                             Quantity = 10,
@@ -759,7 +765,7 @@ namespace Backend.Migrations
                             Description = "Thiết bị massage đa năng giúp thư giãn cơ bắp, giảm mệt mỏi và hỗ trợ lưu thông máu, phù hợp sử dụng tại nhà sau ngày làm việc căng thẳng.",
                             Image = "/images/chamsoc3.jpg",
                             IsDeleted = false,
-                            IsRental = false,
+                            IsRental = true,
                             Name = "Máy Massage Cầm Tay Beurer MG21",
                             Price = 1299000m,
                             Quantity = 15,
@@ -773,7 +779,7 @@ namespace Backend.Migrations
                             Description = "Làm sạch sâu, chống lão hóa, pin lâu dài.",
                             Image = "/images/chamsoc4.jpg",
                             IsDeleted = false,
-                            IsRental = true,
+                            IsRental = false,
                             Name = "Máy rửa mặt Foreo Luna Mini 3",
                             Price = 2499000m,
                             Quantity = 8,
@@ -807,6 +813,9 @@ namespace Backend.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal>("DamageFee")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -834,6 +843,29 @@ namespace Backend.Migrations
 
                     b.Property<int?>("Length")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentLinkId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("PaymentStatus")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PaymentUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("QrCodeUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTime?>("ReturnedAt")
                         .HasColumnType("datetime2");
@@ -889,6 +921,10 @@ namespace Backend.Migrations
                     b.Property<decimal>("TotalPrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TransactionCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
@@ -1062,6 +1098,12 @@ namespace Backend.Migrations
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ResetPasswordCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResetPasswordCodeExpiry")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -1299,7 +1341,7 @@ namespace Backend.Migrations
                             ExpirationDate = new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc),
                             IsValid = true,
                             MaxUsageCount = 200,
-                            MinimumOrderValue = 100000m,
+                            MinimumOrderValue = 1000000m,
                             Type = "fixed"
                         },
                         new

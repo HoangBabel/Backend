@@ -11,7 +11,7 @@ namespace Backend.Models
         [Required]
         public string Code { get; set; } = string.Empty;
 
-      
+
         public string? Type { get; set; }
 
         public decimal? DiscountValue { get; set; }        // Giảm trực tiếp (Fixed)

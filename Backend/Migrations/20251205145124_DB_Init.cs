@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class dbsetnew : Migration
+    public partial class DB_Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -41,6 +41,8 @@ namespace Backend.Migrations
                     QrCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     LastEventAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    PaidAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     RawPayload = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: true),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
@@ -93,6 +95,8 @@ namespace Backend.Migrations
                     PasswordHash = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ResetPasswordCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ResetPasswordCodeExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Address = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
                     Role = table.Column<string>(type: "nvarchar(20)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -249,6 +253,13 @@ namespace Backend.Migrations
                     ShippingFee = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ShippingAddress = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    PaymentLinkId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    PaymentUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    QrCodeUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    TransactionCode = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    PaymentStatus = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    PaidAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ConfirmedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ToProvinceId = table.Column<int>(type: "int", nullable: true),
                     ToProvinceName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     ToDistrictId = table.Column<int>(type: "int", nullable: true),
@@ -264,6 +275,7 @@ namespace Backend.Migrations
                     Height = table.Column<int>(type: "int", nullable: true),
                     VoucherId = table.Column<int>(type: "int", nullable: true),
                     VoucherCodeSnapshot = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    PaymentMethod = table.Column<string>(type: "nvarchar(20)", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(20)", nullable: false),
                     ReturnedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     TotalPrice = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
@@ -424,7 +436,7 @@ namespace Backend.Migrations
                 columns: new[] { "CategoryId", "Name" },
                 values: new object[,]
                 {
-                    { 1, "Nấu ăn và chế biến thực phẩm" },
+                    { 1, "Chế biến thực phẩm" },
                     { 2, "Làm mát và giữ lạnh" },
                     { 3, "Giặt giũ và vệ sinh" },
                     { 4, "Giải trí" },
@@ -433,11 +445,11 @@ namespace Backend.Migrations
 
             migrationBuilder.InsertData(
                 table: "Users",
-                columns: new[] { "Id", "Address", "AvatarUrl", "CreatedAt", "Email", "FullName", "IsActive", "IsTwoFactorEnabled", "PasswordHash", "PhoneNumber", "Role", "TwoFactorAttemptCount", "TwoFactorCode", "TwoFactorCodeExpiry", "Username" },
+                columns: new[] { "Id", "Address", "AvatarUrl", "CreatedAt", "Email", "FullName", "IsActive", "IsTwoFactorEnabled", "PasswordHash", "PhoneNumber", "ResetPasswordCode", "ResetPasswordCodeExpiry", "Role", "TwoFactorAttemptCount", "TwoFactorCode", "TwoFactorCodeExpiry", "Username" },
                 values: new object[,]
                 {
-                    { 1, null, "https://localhost:44303/uploads/avatars/d580bd4e-3fce-4964-9e0c-53177f34082c.png", new DateTime(2025, 11, 11, 22, 27, 39, 707, DateTimeKind.Local).AddTicks(2879), "hoangphap1000@gmail.com", "Lê Hoàng Pháp", true, false, "$2a$11$5WvpePUu2EIg8jo7MBWjvee3/uwro4V6QUIRSAju3HSEJVmvwcXJe", "0564090866", "Admin", 0, null, null, "admin" },
-                    { 2, null, null, new DateTime(2025, 10, 16, 10, 32, 39, 924, DateTimeKind.Local).AddTicks(5745), "giang@example.com", "Le Giang", true, false, "$2a$11$zB0cPctNLMkRJqNbC7qc7eF.VvtXVr1KmCuGUEoXC331zdp4Q9J.a", "0773678161", "Admin", 0, null, null, "giang" }
+                    { 1, null, "https://localhost:44303/uploads/avatars/d580bd4e-3fce-4964-9e0c-53177f34082c.png", new DateTime(2025, 11, 11, 22, 27, 39, 707, DateTimeKind.Local).AddTicks(2879), "hoangphap1000@gmail.com", "Lê Hoàng Pháp", true, false, "$2a$11$5WvpePUu2EIg8jo7MBWjvee3/uwro4V6QUIRSAju3HSEJVmvwcXJe", "0564090866", null, null, "Admin", 0, null, null, "admin" },
+                    { 2, null, null, new DateTime(2025, 10, 16, 10, 32, 39, 924, DateTimeKind.Local).AddTicks(5745), "giang@example.com", "Le Giang", true, false, "$2a$11$zB0cPctNLMkRJqNbC7qc7eF.VvtXVr1KmCuGUEoXC331zdp4Q9J.a", "0773678161", null, null, "Admin", 0, null, null, "giang" }
                 });
 
             migrationBuilder.InsertData(
@@ -453,7 +465,7 @@ namespace Backend.Migrations
                     { 6, true, "FREESHIP", 0, null, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 500, null, 1000000m, null, "shipping", null },
                     { 7, true, "SHIP50", 0, null, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 300, null, 500000m, 50m, "shipping", null },
                     { 8, false, "COMBO200K", 0, null, 200000m, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 150, null, 3000000m, null, "fixed", null },
-                    { 9, false, "THUE100K", 0, null, 100000m, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 200, null, 100000m, null, "fixed", null },
+                    { 9, false, "THUE100K", 0, null, 100000m, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 200, null, 1000000m, null, "fixed", null },
                     { 10, false, "THUE15", 0, 15m, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 100, 300000m, 2000000m, null, "percent", null },
                     { 11, false, "EXPIRED", 0, null, 500000m, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), true, 10, null, 1000000m, null, "fixed", null },
                     { 12, false, "SOLDOUT", 5, 25m, null, new DateTime(2025, 12, 31, 23, 59, 59, 0, DateTimeKind.Utc), true, 5, 1000000m, 3000000m, null, "percent", null },
@@ -465,30 +477,30 @@ namespace Backend.Migrations
                 columns: new[] { "IdProduct", "CategoryId", "Condition", "CreatedBy", "CreatedDate", "Description", "Image", "IsDeleted", "IsRental", "Name", "Price", "Quantity", "Status", "UpdatedBy", "UpdatedDate" },
                 values: new object[,]
                 {
-                    { 1, 1, 0, null, null, "Nấu cơm nhanh, giữ ấm lâu, dễ vệ sinh.", "/images/giadung1.jpg", false, false, "Nồi cơm điện Cuckoo CR-0675F", 1590000m, 18, "ConHang", null, null },
+                    { 1, 1, 0, null, null, "Nấu cơm nhanh, giữ ấm lâu, dễ vệ sinh.", "/images/giadung1.jpg", false, true, "Nồi cơm điện Cuckoo CR-0675F", 1590000m, 18, "ConHang", null, null },
                     { 2, 1, 0, null, null, "Công nghệ Rapid Air giảm 90% dầu mỡ.", "/images/giadung2.jpg", false, false, "Nồi chiên không dầu Philips HD9200/90", 2290000m, 15, "ConHang", null, null },
-                    { 3, 1, 0, null, null, "Hâm, nấu, rã đông nhanh, núm xoay cơ học.", "/images/giadung3.jpg", false, false, "Lò vi sóng Sharp R-G226VN-BK", 1990000m, 14, "ConHang", null, null },
+                    { 3, 1, 0, null, null, "Hâm, nấu, rã đông nhanh, núm xoay cơ học.", "/images/giadung3.jpg", false, true, "Lò vi sóng Sharp R-G226VN-BK", 1990000m, 14, "ConHang", null, null },
                     { 4, 1, 0, null, null, "Công suất 700W, lưỡi dao thép không gỉ.", "/images/giadung4.jpg", false, false, "Máy xay sinh tố Philips HR2221/00", 1250000m, 12, "ConHang", null, null },
-                    { 5, 1, 0, null, null, "Pha espresso chất lượng, thiết kế nhỏ gọn.", "/images/giadung5.jpg", false, false, "Máy pha cà phê Delonghi EC685", 3990000m, 10, "ConHang", null, null },
+                    { 5, 1, 0, null, null, "Pha espresso chất lượng, thiết kế nhỏ gọn.", "/images/giadung5.jpg", false, true, "Máy pha cà phê Delonghi EC685", 3990000m, 10, "ConHang", null, null },
                     { 6, 2, 0, null, null, "Làm lạnh nhanh, khử mùi than hoạt tính.", "/images/lammat1.jpg", false, false, "Tủ lạnh Samsung Inverter 424 lít RT42CG6324B1SV", 14990000m, 7, "ConHang", null, null },
-                    { 7, 2, 0, null, null, "Bảo quản thực phẩm lâu dài, tiết kiệm điện.", "/images/lammat2.jpg", false, false, "Tủ đông Electrolux 200 lít EFZ2200H-H", 8990000m, 8, "ConHang", null, null },
+                    { 7, 2, 0, null, null, "Bảo quản thực phẩm lâu dài, tiết kiệm điện.", "/images/lammat2.jpg", false, true, "Tủ đông Electrolux 200 lít EFZ2200H-H", 8990000m, 8, "ConHang", null, null },
                     { 8, 2, 0, null, null, "Làm mát nhanh, lọc bụi, 3 chế độ gió.", "/images/lammat3.jpg", false, false, "Quạt điều hòa Midea AC120-19AR", 3290000m, 12, "ConHang", null, null },
-                    { 9, 2, 0, null, null, "Khử khuẩn, tiết kiệm điện vượt trội.", "/images/lammat4.jpg", false, false, "Máy điều hòa Daikin Inverter 1.5 HP FTKY35WMVMV", 11490000m, 9, "ConHang", null, null },
+                    { 9, 2, 0, null, null, "Khử khuẩn, tiết kiệm điện vượt trội.", "/images/lammat4.jpg", false, true, "Máy điều hòa Daikin Inverter 1.5 HP FTKY35WMVMV", 11490000m, 9, "ConHang", null, null },
                     { 10, 2, 0, null, null, "Tiện dụng, vận hành êm, thiết kế nhỏ gọn.", "/images/lammat5.jpg", false, false, "Quạt điện Asia F16001", 550000m, 20, "ConHang", null, null },
-                    { 11, 3, 0, null, null, "Công nghệ UltraMix hòa tan bột giặt.", "/images/giatgiu1.jpg", false, false, "Máy giặt Electrolux Inverter 10kg EWF1024BDWA", 8990000m, 10, "ConHang", null, null },
+                    { 11, 3, 0, null, null, "Công nghệ UltraMix hòa tan bột giặt.", "/images/giatgiu1.jpg", false, true, "Máy giặt Electrolux Inverter 10kg EWF1024BDWA", 8990000m, 10, "ConHang", null, null },
                     { 12, 3, 0, null, null, "Rửa sạch, tiết kiệm nước, vận hành êm ái.", "/images/giatgiu2.jpg", false, false, "Máy rửa chén Bosch SMS25CI00E", 12990000m, 6, "ConHang", null, null },
-                    { 13, 3, 0, null, null, "Hút bụi tự động, lập bản đồ thông minh.", "/images/giatgiu3.jpg", false, false, "Robot hút bụi Xiaomi Mi Robot Vacuum", 4990000m, 15, "ConHang", null, null },
+                    { 13, 3, 0, null, null, "Hút bụi tự động, lập bản đồ thông minh.", "/images/giatgiu3.jpg", false, true, "Robot hút bụi Xiaomi Mi Robot Vacuum", 4990000m, 15, "ConHang", null, null },
                     { 14, 3, 0, null, null, "Loại bỏ bụi mịn, vi khuẩn và mùi hôi.", "/images/giatgiu4.jpg", false, false, "Máy lọc không khí Sharp FP-J40E-B", 3990000m, 8, "ConHang", null, null },
-                    { 15, 3, 0, null, null, "Sấy nhanh, tiết kiệm điện, bảo vệ vải.", "/images/giatgiu5.jpg", false, false, "Máy sấy quần áo Electrolux EDV705HQWA", 5990000m, 9, "ConHang", null, null },
+                    { 15, 3, 0, null, null, "Sấy nhanh, tiết kiệm điện, bảo vệ vải.", "/images/giatgiu5.jpg", false, true, "Máy sấy quần áo Electrolux EDV705HQWA", 5990000m, 9, "ConHang", null, null },
                     { 16, 4, 0, null, null, "Smart Tivi 4K sắc nét, hỗ trợ giọng nói.", "/images/giai_tri1.jpg", false, false, "Tivi Samsung Crystal UHD 55 inch BU8000", 12990000m, 12, "ConHang", null, null },
-                    { 17, 4, 0, null, null, "Âm thanh mạnh mẽ, pin 20 giờ.", "/images/giai_tri2.jpg", false, false, "Loa Bluetooth JBL Charge 5", 2590000m, 15, "ConHang", null, null },
+                    { 17, 4, 0, null, null, "Âm thanh mạnh mẽ, pin 20 giờ.", "/images/giai_tri2.jpg", false, true, "Loa Bluetooth JBL Charge 5", 2590000m, 15, "ConHang", null, null },
                     { 18, 4, 0, null, null, "Màn hình 4K sắc nét, hệ điều hành webOS, hỗ trợ điều khiển giọng nói.", "/images/giai_tri3.jpg", false, false, "Tivi LG 4K Smart TV 55 inch UQ7550", 11990000m, 10, "ConHang", null, null },
-                    { 19, 4, 0, null, null, "Chiếu phim Full HD, pin tích hợp.", "/images/giai_tri4.jpg", false, false, "Máy chiếu mini ViewSonic M1", 6990000m, 7, "ConHang", null, null },
+                    { 19, 4, 0, null, null, "Chiếu phim Full HD, pin tích hợp.", "/images/giai_tri4.jpg", false, true, "Máy chiếu mini ViewSonic M1", 6990000m, 7, "ConHang", null, null },
                     { 20, 4, 0, null, null, "Âm thanh vòm 3D sống động.", "/images/giai_tri5.jpg", false, false, "Loa Soundbar LG SN6Y", 3990000m, 9, "ConHang", null, null },
-                    { 21, 5, 0, null, null, "Cạo êm, bảo vệ da, pin 50 phút.", "/images/chamsoc1.jpg", false, false, "Máy cạo râu Philips Series 5000", 1599000m, 10, "ConHang", null, null },
+                    { 21, 5, 0, null, null, "Cạo êm, bảo vệ da, pin 50 phút.", "/images/chamsoc1.jpg", false, true, "Máy cạo râu Philips Series 5000", 1599000m, 10, "ConHang", null, null },
                     { 22, 5, 0, null, null, "Sấy nhanh, nhiệt độ ổn định, bảo vệ tóc.", "/images/chamsoc2.jpg", false, false, "Máy sấy tóc Panasonic EH-NA65", 1299000m, 12, "ConHang", null, null },
-                    { 23, 5, 0, null, null, "Thiết bị massage đa năng giúp thư giãn cơ bắp, giảm mệt mỏi và hỗ trợ lưu thông máu, phù hợp sử dụng tại nhà sau ngày làm việc căng thẳng.", "/images/chamsoc3.jpg", false, false, "Máy Massage Cầm Tay Beurer MG21", 1299000m, 15, "ConHang", null, null },
-                    { 24, 5, 0, null, null, "Làm sạch sâu, chống lão hóa, pin lâu dài.", "/images/chamsoc4.jpg", false, true, "Máy rửa mặt Foreo Luna Mini 3", 2499000m, 8, "ConHang", null, null },
+                    { 23, 5, 0, null, null, "Thiết bị massage đa năng giúp thư giãn cơ bắp, giảm mệt mỏi và hỗ trợ lưu thông máu, phù hợp sử dụng tại nhà sau ngày làm việc căng thẳng.", "/images/chamsoc3.jpg", false, true, "Máy Massage Cầm Tay Beurer MG21", 1299000m, 15, "ConHang", null, null },
+                    { 24, 5, 0, null, null, "Làm sạch sâu, chống lão hóa, pin lâu dài.", "/images/chamsoc4.jpg", false, false, "Máy rửa mặt Foreo Luna Mini 3", 2499000m, 8, "ConHang", null, null },
                     { 25, 5, 0, null, null, "Cạo nhanh, an toàn, dễ vệ sinh.", "/images/chamsoc5.jpg", false, true, "Máy cắt tóc Philips HC3505", 899000m, 10, "ConHang", null, null }
                 });
 

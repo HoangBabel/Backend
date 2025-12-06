@@ -2,158 +2,119 @@
 using Backend.DTOs;
 using Backend.Models;
 using Backend.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
-namespace Backend.Controllers
+namespace Backend.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public sealed class RentalCheckoutController : ControllerBase
 {
-    [ApiController]
-    [Route("api/rental-checkout")]
-    public class RentalCheckoutController : ControllerBase
+    private readonly IRentalCheckoutService _service;
+    private readonly AppDbContext _context;
+
+    public RentalCheckoutController(IRentalCheckoutService service, AppDbContext context)
     {
-        private readonly IRentalCheckoutService _service;
-        private readonly AppDbContext _context;
+        _service = service;
+        _context = context;
+    }
 
-        public RentalCheckoutController(IRentalCheckoutService service, AppDbContext context)
+    private int GetUserId(int? devUserId)
+    {
+        var claim = User.FindFirst("id") ?? User.FindFirst(ClaimTypes.NameIdentifier);
+
+        if (claim != null && int.TryParse(claim.Value, out var uid))
+            return uid;
+
+        if (devUserId.HasValue)
+            return devUserId.Value;
+
+        throw new UnauthorizedAccessException("Thiếu token hoặc devUserId.");
+    }
+
+    /// <summary>
+    /// Step 1: Chỉ tạo đơn thuê — KHÔNG tạo QR
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> CheckoutRental(
+        [FromBody] CheckoutRentalRequest? req,
+        [FromQuery] int? devUserId,
+        CancellationToken ct)
+    {
+        if (req == null)
+            return BadRequest(new { message = "Body rỗng." });
+
+        int userId;
+        try { userId = GetUserId(devUserId); }
+        catch (UnauthorizedAccessException ex)
+        { return Unauthorized(new { message = ex.Message }); }
+
+        try
         {
-            _service = service;
-            _context = context;
+            var res = await _service.CheckoutRentalAsync(userId, req, ct);
+
+            return Ok(new
+            {
+                res.Message,
+                res.RentalId,
+                res.Subtotal,
+                res.ShippingFee,
+                res.Discount,
+                res.Deposit,
+                res.ServiceType,
+                res.Weight,
+                res.FinalAmount,
+
+                nextStep = "CREATE_PAYMENT_LINK",
+                paymentInstruction = "Gọi API /api/payos/create-rental-payment-link để tạo QR."
+            });
         }
-
-        private int GetUserId()
+        catch (Exception ex)
         {
-            var claim = User.FindFirst("id") ?? User.FindFirst(ClaimTypes.NameIdentifier);
-            if (claim != null && int.TryParse(claim.Value, out var uid))
-                return uid;
-            throw new UnauthorizedAccessException("Không tìm thấy userId trong token.");
+            return StatusCode(500, new { error = "Lỗi khi checkout.", detail = ex.Message });
         }
+    }
 
-        /// <summary>
-        /// Checkout đơn thuê
-        /// </summary>
-        [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> CheckoutRental(
-            [FromBody] CheckoutRentalRequest req,
-            CancellationToken ct)
+    /// <summary>
+    /// FE kiểm tra trạng thái đơn — Không trả QR nếu chưa tạo payment link
+    /// </summary>
+    [HttpGet("{rentalId}/payment-status")]
+    public async Task<IActionResult> GetPaymentStatus(
+        int rentalId,
+        [FromQuery] int? devUserId,
+        CancellationToken ct)
+    {
+        try
         {
-            try
-            {
-                var userId = GetUserId();
-                var res = await _service.CheckoutRentalAsync(userId, req, ct);
+            int userId = GetUserId(devUserId);
 
-                return Ok(new
-                {
-                    message = "Checkout thành công",
-                    data = new
-                    {
-                        res.RentalId,
-                        res.Subtotal,
-                        res.Deposit,
-                        res.ShippingFee,
-                        res.SubtotalDiscount,
-                        res.ShippingDiscount,
-                        res.Discount,
-                        res.FinalAmount,
-                        PaymentMethod = res.PaymentMethod.ToString(),
-                        res.VoucherCode,
-                        res.ServiceType,
-                        res.Weight,
-                        res.CheckoutUrl,
-                        res.QrCode,
-                        res.PaymentLinkId
-                    }
-                });
-            }
-            catch (InvalidOperationException ex)
+            var rental = await _context.Rentals.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == rentalId && r.UserId == userId, ct);
+
+            if (rental == null)
+                return NotFound(new { message = "Không tìm thấy đơn thuê." });
+
+            return Ok(new
             {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
+                rentalId = rental.Id,
+                rentalStatus = rental.Status.ToString(),    // DBA-PRIMARY STATUS
+                paymentStatus = rental.PaymentStatus ?? "PENDING",
+
+                isPaymentLinkCreated = rental.PaymentLinkId != null,
+
+                paymentUrl = rental.PaymentLinkId != null ? rental.PaymentUrl : null,
+                qrCodeUrl = rental.PaymentLinkId != null ? rental.QrCodeUrl : null
+            });
         }
-
-        /// <summary>
-        /// Kiểm tra trạng thái thanh toán của rental
-        /// </summary>
-        [HttpGet("{rentalId}/payment-status")]
-        [Authorize]
-        public async Task<IActionResult> GetPaymentStatus(int rentalId, CancellationToken ct)
+        catch (UnauthorizedAccessException ex)
         {
-            try
-            {
-                var userId = GetUserId();
-
-                var rental = await _context.Rentals
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(r => r.Id == rentalId && r.UserId == userId, ct);
-
-                if (rental == null)
-                    return NotFound(new { message = "Không tìm thấy đơn thuê." });
-
-                var payment = await _context.Payments
-                    .AsNoTracking()
-                    .Where(p => p.Type == PaymentType.Rental && p.RefId == rentalId)
-                    .OrderByDescending(p => p.Id)
-                    .FirstOrDefaultAsync(ct);
-
-                return Ok(new
-                {
-                    rentalId = rental.Id,
-                    rentalStatus = rental.Status.ToString(),
-                    payment = payment == null ? null : new
-                    {
-                        payment.Id,
-                        payment.OrderCode,
-                        status = payment.Status.ToString(),
-                        payment.ExpectedAmount,
-                        payment.PaidAt,
-                        payment.CreatedAt
-                    }
-                });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
+            return Unauthorized(new { message = ex.Message });
         }
-
-        /// <summary>
-        /// Hủy payment link
-        /// </summary>
-        [HttpPost("{rentalId}/cancel-payment")]
-        [Authorize]
-        public async Task<IActionResult> CancelPayment(int rentalId, CancellationToken ct)
+        catch (Exception ex)
         {
-            try
-            {
-                var userId = GetUserId();
-
-                var payment = await _context.Payments
-                    .Where(p => p.Type == PaymentType.Rental &&
-                               p.RefId == rentalId &&
-                               p.Status == PaymentStatus.Created)
-                    .OrderByDescending(p => p.Id)
-                    .FirstOrDefaultAsync(ct);
-
-                if (payment == null)
-                    return NotFound(new { message = "Không tìm thấy payment link để hủy." });
-
-                payment.Status = PaymentStatus.Cancelled;
-                payment.UpdatedAt = DateTime.UtcNow;
-
-                await _context.SaveChangesAsync(ct);
-
-                return Ok(new { message = "Đã hủy payment link thành công." });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
+            return StatusCode(500, new { error = ex.Message });
         }
     }
 }

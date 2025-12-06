@@ -8,7 +8,6 @@ namespace Backend.Models
 {
     public class RentalItem
     {
-      
         [Key]
         public int Id { get; set; }
 
@@ -45,7 +44,7 @@ namespace Backend.Models
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal? LateFeePerUnitAtBooking { get; private set; }
-      
+
         // ===== Methods (server-side only) =====
         public void SnapshotPricing(decimal pricePerUnit, decimal? deposit = null, decimal? lateFeePerUnit = null)
         {
