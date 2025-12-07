@@ -88,7 +88,7 @@ public sealed class PayOSWebhookController : ControllerBase
                     var rental = await _context.Rentals.FindAsync(payment.RefId);
                     if (rental != null && rental.Status == RentalStatus.Pending)
                     {
-                        rental.Status = RentalStatus.Confirmed;
+                        rental.Status = RentalStatus.Paid;
                         rental.ConfirmedAt = DateTime.UtcNow;
                     }
                 }

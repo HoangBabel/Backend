@@ -1,13 +1,14 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Backend.DTOs;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace Backend.Models
 {
     public class Rental
     {
-     
+
         [Key]
         public int Id { get; set; }
 
@@ -26,7 +27,7 @@ namespace Backend.Models
         [Required]
         public DateTime EndDate { get; set; }
 
-        [ StringLength(255)]
+        [StringLength(255)]
         public string? ShippingAddress { get; set; }
         // ===== THÔNG TIN THANH TOÁN =====
         [StringLength(100)]
@@ -46,6 +47,7 @@ namespace Backend.Models
 
         public DateTime? PaidAt { get; set; }
         public DateTime? ConfirmedAt { get; set; }
+
         // ===== THÊM CÁC TRƯỜNG MỚI CHO SHIPPING =====
 
         // Thông tin địa chỉ chi tiết để tính phí ship
@@ -85,7 +87,9 @@ namespace Backend.Models
         // Lưu ảnh chụp mã voucher lúc đặt (phòng khi giá trị voucher đổi về sau)
         [StringLength(50)]
         public string? VoucherCodeSnapshot { get; set; }
-
+        [Required, Column(TypeName = "nvarchar(20)")]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.COD;
         [Required]
         [Column(TypeName = "nvarchar(20)")]
         [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -173,9 +177,9 @@ namespace Backend.Models
     public enum RentalStatus
     {
         Pending,     // Đang chờ xác nhận
+        Paid,        // Đã Thanh Toán
         Active,      // Đang thuê
         Completed,   // Đã trả
-        Cancelled,    // Đã hủy
-        Confirmed
+        Cancelled    // Đã hủy
     }
 }
