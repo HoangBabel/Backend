@@ -14,12 +14,18 @@ public sealed class RentalCheckoutController : ControllerBase
 {
     private readonly IRentalCheckoutService _service;
     private readonly AppDbContext _context;
+    private readonly IEmailService _emailService;
 
-    public RentalCheckoutController(IRentalCheckoutService service, AppDbContext context)
+    public RentalCheckoutController(
+    IRentalCheckoutService service,
+    AppDbContext context,
+    IEmailService emailService)
     {
         _service = service;
         _context = context;
+        _emailService = emailService;
     }
+
 
     private int GetUserId(int? devUserId)
     {
@@ -54,6 +60,22 @@ public sealed class RentalCheckoutController : ControllerBase
         try
         {
             var res = await _service.CheckoutRentalAsync(userId, req, ct);
+
+            // ✅ GỬI EMAIL XÁC NHẬN CHECKOUT (FIRE-AND-FORGET)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailService.SendRentalConfirmationEmailAsync(
+                        rentalId: res.RentalId,
+                        CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Failed to send checkout email: {ex.Message}");
+                }
+            });
+
 
             return Ok(new
             {

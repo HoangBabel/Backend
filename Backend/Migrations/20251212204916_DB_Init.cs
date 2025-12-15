@@ -448,7 +448,7 @@ namespace Backend.Migrations
                 columns: new[] { "Id", "Address", "AvatarUrl", "CreatedAt", "Email", "FullName", "IsActive", "IsTwoFactorEnabled", "PasswordHash", "PhoneNumber", "ResetPasswordCode", "ResetPasswordCodeExpiry", "Role", "TwoFactorAttemptCount", "TwoFactorCode", "TwoFactorCodeExpiry", "Username" },
                 values: new object[,]
                 {
-                    { 1, null, "https://localhost:44303/uploads/avatars/d580bd4e-3fce-4964-9e0c-53177f34082c.png", new DateTime(2025, 11, 11, 22, 27, 39, 707, DateTimeKind.Local).AddTicks(2879), "hoangphap1000@gmail.com", "Lê Hoàng Pháp", true, false, "$2a$11$5WvpePUu2EIg8jo7MBWjvee3/uwro4V6QUIRSAju3HSEJVmvwcXJe", "0564090866", null, null, "Admin", 0, null, null, "admin" },
+                    { 1, null, "https://localhost:44303/uploads/avatars/d580bd4e-3fce-4964-9e0c-53177f34082c.png", new DateTime(2025, 11, 11, 22, 27, 39, 707, DateTimeKind.Local).AddTicks(2879), "hoangphap1000@gmail.com", "Lê Hoàng Pháp", true, false, "$2a$11$sY8NkrpwrjTnCJAgOjRj8.hX5dGTDc/fh3q976ShhSxDtGX3XyeQ2", "0564090866", null, null, "Admin", 0, null, null, "admin" },
                     { 2, null, null, new DateTime(2025, 10, 16, 10, 32, 39, 924, DateTimeKind.Local).AddTicks(5745), "giang@example.com", "Le Giang", true, false, "$2a$11$zB0cPctNLMkRJqNbC7qc7eF.VvtXVr1KmCuGUEoXC331zdp4Q9J.a", "0773678161", null, null, "Admin", 0, null, null, "giang" }
                 });
 

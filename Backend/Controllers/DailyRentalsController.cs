@@ -37,6 +37,47 @@ namespace Backend.Controllers
             return int.Parse(id);
         }
 
+        // DELETE: /api/DailyRentals/{id}
+        [HttpDelete("{id:int}")]
+        public async Task<ActionResult> DeleteRental(int id)
+        {
+            int userId;
+            try { userId = GetUserId(User); }
+            catch { return Unauthorized("Không xác định được user."); }
+
+            var rental = await _db.Rentals
+                .Include(r => r.Items)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (rental == null)
+                return NotFound("Đơn thuê không tồn tại.");
+
+            // ❌ Chỉ cho phép xóa đơn của chính user
+            if (rental.UserId != userId)
+                return Forbid("Bạn không có quyền xóa đơn của người khác.");
+
+            // ❌ Không cho phép xóa đơn đã thanh toán hoặc đang thuê
+            if (rental.Status is RentalStatus.Paid
+                               or RentalStatus.Active
+                               or RentalStatus.Completed)
+            {
+                return BadRequest("Đơn đã thanh toán hoặc đã kích hoạt — không thể xóa.");
+            }
+
+            // ✔ OK → Xóa Items rồi xóa Rental
+            _db.RentalItems.RemoveRange(rental.Items);
+            _db.Rentals.Remove(rental);
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Message = "Xóa đơn thành công.",
+                RentalId = id
+            });
+        }
+
+
         // GET: /api/DailyRentals/user
         [HttpGet("user")]
         public async Task<ActionResult<List<RentalDto>>> GetMyRentals()
@@ -159,28 +200,6 @@ namespace Backend.Controllers
         }
 
 
-        // GET: /api/DailyRentals/admin/all
-        [HttpGet("admin/all")]
-        public async Task<ActionResult<List<Rental>>> GetAllRentals()
-        {
-            try
-            {
-                var rentals = await _db.Rentals
-                    .Include(r => r.User)
-                    .Include(r => r.Items)
-                        .ThenInclude(i => i.Product)
-                    .OrderByDescending(r => r.StartDate)
-                    .ToListAsync();
-
-                return Ok(rentals);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-
         // POST: /api/DailyRentals/quote
         [HttpPost("quote")]
         public async Task<ActionResult<QuoteDailyResponseDto>> Quote(
@@ -206,21 +225,6 @@ namespace Backend.Controllers
             {
                 var userId = GetUserId(User);
                 var res = await _svc.CreateDailyRentalAsync(dto, userId);
-
-                // ✅ GỬI EMAIL XÁC NHẬN (FIRE-AND-FORGET)
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await _emailService.SendRentalConfirmationEmailAsync(
-                            res.RentalId,
-                            CancellationToken.None);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"❌ Failed to send rental confirmation email: {ex.Message}");
-                    }
-                });
 
                 return CreatedAtAction(nameof(GetById), new { id = res.RentalId }, res);
             }
@@ -425,6 +429,130 @@ namespace Backend.Controllers
                 return BadRequest(new { Error = ex.Message });
             }
         }
+
+        // PUT: /api/DailyRentals/admin/{id}/status
+        [HttpPut("admin/{id:int}/status")]
+        public async Task<ActionResult> AdminUpdateStatus(
+            int id,
+            [FromBody] UpdateRentalStatusDto dto)
+        {
+            var rental = await _db.Rentals
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (rental == null)
+                return NotFound($"Không tìm thấy đơn thuê #{id}");
+
+            try
+            {
+                // ❌ Không cho sửa đơn đã kết thúc
+                if (rental.Status is RentalStatus.Completed or RentalStatus.Cancelled)
+                    return BadRequest("Không thể cập nhật trạng thái đơn đã hoàn tất hoặc huỷ.");
+
+                var oldStatus = rental.Status;
+
+                // ❌ Không thay đổi
+                if (oldStatus == dto.Status)
+                    return BadRequest("Trạng thái không thay đổi.");
+
+                // ✔ Cập nhật trạng thái
+                rental.Status = dto.Status;
+
+                // ✔ Nếu admin xác nhận đã thanh toán
+                if (dto.Status == RentalStatus.Paid)
+                {
+                    rental.PaymentStatus = "PAID";
+                    rental.ConfirmedAt = DateTime.UtcNow;
+                }
+
+                await _db.SaveChangesAsync();
+
+                // ✅ GỬI EMAIL KHI TRẠNG THÁI THAY ĐỔI (FIRE-AND-FORGET)
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _emailService.SendRentalStatusUpdateEmailAsync(
+                            rentalId: rental.Id,
+                            newStatus: dto.Status,
+                            CancellationToken.None
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Failed to send status update email: {ex.Message}");
+                    }
+                });
+
+                return Ok(new
+                {
+                    RentalId = rental.Id,
+                    OldStatus = oldStatus.ToString(),
+                    NewStatus = rental.Status.ToString()
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Error = ex.Message });
+            }
+        }
+
+
+        // GET: /api/DailyRentals/admin/all
+        [HttpGet("admin/all")]
+        public async Task<ActionResult<List<AdminRentalDto>>> GetAllRentals()
+        {
+            var rentals = await _db.Rentals
+                .Include(r => r.User)
+                .Include(r => r.Items)
+                    .ThenInclude(i => i.Product)
+                .OrderByDescending(r => r.StartDate)
+                .Select(r => new AdminRentalDto
+                {
+                    Id = r.Id,
+
+                    // 👤 Người thuê
+                    UserId = r.UserId,
+                    FullName = r.User!.FullName,
+                    Email = r.User.Email,
+                    PhoneNumber = r.User.PhoneNumber,
+
+                    // 📦 Trạng thái
+                    Status = r.Status.ToString(),
+                    PaymentStatus = r.PaymentStatus!,
+                    PaymentMethod = r.PaymentMethod,
+
+                    // ⏱ Thời gian
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                    ReturnedAt = r.ReturnedAt,
+
+                    // 💰 Tài chính
+                    TotalPrice = r.TotalPrice,
+                    DepositPaid = r.DepositPaid,
+                    LateFee = r.LateFee,
+                    CleaningFee = r.CleaningFee,
+                    DamageFee = r.DamageFee,
+                    DepositRefund = r.DepositRefund,
+
+                    // 📄 Items
+                    Items = r.Items.Select(i => new RentalItemDto
+                    {
+                        Id = i.Id,
+                        ProductId = i.ProductId,
+                        ProductName = i.Product.Name,
+                        Quantity = i.Quantity,
+                        Units = i.Units,
+                        PricePerUnitAtBooking = i.PricePerUnitAtBooking,
+                        SubTotal = i.SubTotal
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(rentals);
+        }
+
+
 
         // DTO cho Settle
         public record SettleRentalRequestDto(

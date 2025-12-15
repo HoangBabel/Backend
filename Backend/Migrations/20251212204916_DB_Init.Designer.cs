@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251205145124_DB_Init")]
+    [Migration("20251212204916_DB_Init")]
     partial class DB_Init
     {
         /// <inheritdoc />
@@ -1138,7 +1138,7 @@ namespace Backend.Migrations
                             FullName = "Lê Hoàng Pháp",
                             IsActive = true,
                             IsTwoFactorEnabled = false,
-                            PasswordHash = "$2a$11$5WvpePUu2EIg8jo7MBWjvee3/uwro4V6QUIRSAju3HSEJVmvwcXJe",
+                            PasswordHash = "$2a$11$sY8NkrpwrjTnCJAgOjRj8.hX5dGTDc/fh3q976ShhSxDtGX3XyeQ2",
                             PhoneNumber = "0564090866",
                             Role = "Admin",
                             TwoFactorAttemptCount = 0,

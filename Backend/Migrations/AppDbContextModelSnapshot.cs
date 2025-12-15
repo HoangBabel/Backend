@@ -1135,7 +1135,7 @@ namespace Backend.Migrations
                             FullName = "Lê Hoàng Pháp",
                             IsActive = true,
                             IsTwoFactorEnabled = false,
-                            PasswordHash = "$2a$11$5WvpePUu2EIg8jo7MBWjvee3/uwro4V6QUIRSAju3HSEJVmvwcXJe",
+                            PasswordHash = "$2a$11$sY8NkrpwrjTnCJAgOjRj8.hX5dGTDc/fh3q976ShhSxDtGX3XyeQ2",
                             PhoneNumber = "0564090866",
                             Role = "Admin",
                             TwoFactorAttemptCount = 0,

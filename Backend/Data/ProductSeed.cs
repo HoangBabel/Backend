@@ -14,7 +14,7 @@ namespace Backend.Data
                     Id = 1,
                     Username = "admin",
                     Email = "hoangphap1000@gmail.com",
-                    PasswordHash = "$2a$11$5WvpePUu2EIg8jo7MBWjvee3/uwro4V6QUIRSAju3HSEJVmvwcXJe", //123456
+                    PasswordHash = "$2a$11$sY8NkrpwrjTnCJAgOjRj8.hX5dGTDc/fh3q976ShhSxDtGX3XyeQ2", //Admin@124
                     FullName = "Lê Hoàng Pháp",
                     PhoneNumber = "0564090866",
                     Role = UserRole.Admin,
